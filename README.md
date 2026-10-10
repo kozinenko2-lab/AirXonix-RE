@@ -47,3 +47,7 @@ See [Credits](CREDITS.md), [Авторы и благодарности](CREDITS_
 ## r389 — графика и бонус Магнит
 
 См. [описание r389](R389-CHANGES-RU.md) и [режимы OpenGL ES2](docs/GRAPHICS_OPTIONS_RU.md). В PortMaster: Настройки → Графика (ORIGINAL/SHARP/ENHANCED/TOON) и Новые бонусы (ДА/НЕТ).
+
+## Primary H700 architecture: ARM64 (r390)
+
+Native AArch64 is preferred; see [build guide](R390-ARM64.md). ARMHF is optional.

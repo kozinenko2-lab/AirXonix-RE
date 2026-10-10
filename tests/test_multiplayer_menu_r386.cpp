@@ -50,7 +50,8 @@ int main(){
     for(const auto& sp:settingsSprites)if(sp.atlas==LegacyHudAtlas::MenuMP){
         assert(sp.v0>=.5f && sp.v1<=1.f);++retroSettingPlates;
     }
-    assert(retroSettingPlates==2);
+    // r389 adds a third graphics plate.
+    assert(retroSettingPlates==3);
     game.startCoopSession(0);
     assert(game.coopEnabled());
     game.endCoopSessionToMenu();

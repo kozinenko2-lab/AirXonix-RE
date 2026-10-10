@@ -117,3 +117,7 @@ Launcher `portmaster/AirXonix.sh` ищет игру в типичных путя
 ## r389 — графика и бонус Магнит
 
 См. [описание r389](R389-CHANGES-RU.md) и [режимы OpenGL ES2](docs/GRAPHICS_OPTIONS_RU.md). В PortMaster: Настройки → Графика (ORIGINAL/SHARP/ENHANCED/TOON) и Новые бонусы (ДА/НЕТ).
+
+## ARM64 r390
+
+Основная архитектура — ARM64, Cortex-A53. Инструкции: [R390-ARM64-RU.md](R390-ARM64-RU.md).

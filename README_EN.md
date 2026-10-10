@@ -111,3 +111,7 @@ The reverse-engineering guide documents the PE layout, resource RVAs, runtime ad
 - Fixed Homing/Eraser reset/lifetime semantics and sequential pickup initialization, preserving native cross-level fields and previous pickup coordinates instead of synthetic sentinel positions.
 - Added contracts for airborne cached-world/heading behavior, field-debris lifetime, and pickup-smash slot semantics.
 - Current autonomous regression: **241/241 PASS**; `REVERSE_CLOSURE_AUDIT PASS`; `portmaster/AirXonix.sh` passes `bash -n`.
+
+## ARM64 r390
+
+Preferred H700 build: AArch64/Cortex-A53; see [R390-ARM64.md](R390-ARM64.md).

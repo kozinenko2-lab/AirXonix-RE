@@ -39,3 +39,7 @@ The [Android GitHub Actions workflow](.github/workflows/android-apk.yml) builds 
 This snapshot is the public r373 Android source tree. Compilation and runtime behavior on an actual handset must be checked with Android Studio or CI; no successful workflow run is claimed yet. Earlier internal build notes might reference original personal assets; those files are not in the public branch.
 
 For the newer PortMaster coop implementation see [`portmaster`](https://github.com/kozinenko2-lab/AirXonix-RE/tree/portmaster).
+
+## Original creators
+
+See [Credits / dedication](CREDITS.md) and [Авторы / благодарности](CREDITS_RU.md). Original game rights are retained by their respective rights holders. The current metallic multiplayer-menu redesign is in the separate `portmaster` branch and has **not** been ported to Android r373.

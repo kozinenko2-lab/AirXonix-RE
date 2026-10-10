@@ -1,7 +1,10 @@
 #!/bin/bash
-# AirXonix r389 — single PortMaster launcher (ARMHF / Allwinner H700).
+# AirXonix r390 — native AArch64 PortMaster launcher for H700/Cortex-A53.
 # Single player and Wi-Fi Host/Join are selected from INSIDE the game.
-set -u
+# MuOS PortMaster control.txt sources device_info.txt, which can reference
+# unset variables. Bash nounset (-u) would abort before the game starts.
+# Keep nounset disabled while using PortMaster helpers (and throughout the launcher).
+set +u
 PORT_NAME="AirXonix"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PORT_ROOT=""
@@ -17,7 +20,7 @@ mkdir -p "$PORT_DIR/logs" "$PORT_DIR/saves"
 LOG="$PORT_DIR/logs/AirXonix.log"
 : > "$LOG"
 exec >>"$LOG" 2>&1
-printf 'AirXonix r389 (single launcher) %s\n' "$(date 2>/dev/null || true)"
+printf 'AirXonix r390 ARM64 (single launcher) %s\n' "$(date 2>/dev/null || true)"
 echo "PORT_DIR=$PORT_DIR architecture=$(uname -m 2>/dev/null || echo unknown)"
 for ctrl in \
     "$PORT_ROOT/PortMaster/control.txt" \
@@ -29,6 +32,7 @@ for ctrl in \
     /userdata/roms/ports/PortMaster/control.txt; do
     if [ -f "$ctrl" ]; then
         # shellcheck disable=SC1090
+        echo "PortMaster controls: $ctrl"
         source "$ctrl"
         if declare -F get_controls >/dev/null; then get_controls || true; fi
         break
@@ -37,7 +41,7 @@ done
 if declare -F pm_platform_helper >/dev/null; then pm_platform_helper || true; fi
 [ -n "${sdl_controllerconfig:-}" ] && export SDL_GAMECONTROLLERCONFIG="$sdl_controllerconfig"
 export HOME="$PORT_DIR/saves" XDG_DATA_HOME="$PORT_DIR/saves"
-export LD_LIBRARY_PATH="$PORT_DIR/libs-armhf:${LD_LIBRARY_PATH:-}"
+export LD_LIBRARY_PATH="$PORT_DIR/libs-arm64:${LD_LIBRARY_PATH:-}"
 export SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS=0
 export SDL_GAMECONTROLLER_USE_BUTTON_LABELS=0
 export AIRXONIX_VIBRATION_ENABLED="${AIRXONIX_VIBRATION_ENABLED:-1}"
@@ -48,9 +52,9 @@ export AIRXONIX_MP_PORT="${AIRXONIX_MP_PORT:-27840}"
 # Never accidentally import the legacy second-launcher host/join selection.
 unset AIRXONIX_MP_ROLE AIRXONIX_MP_HOST
 unset SDL_VIDEODRIVER SDL_AUDIODRIVER
-if [ ! -e /lib/ld-linux-armhf.so.3 ]; then
-    echo 'ERROR: This firmware lacks the 32-bit ARMHF loader (/lib/ld-linux-armhf.so.3).'
-    echo 'Use firmware with ARMHF userspace compatibility.'
+if [ ! -e /lib/ld-linux-aarch64.so.1 ]; then
+    echo 'ERROR: firmware does not provide AArch64 loader /lib/ld-linux-aarch64.so.1.'
+    echo 'AirXonix r390 is a native ARM64 executable; 32-bit userspace cannot run it.'
     exit 126
 fi
 BIN="$PORT_DIR/airxonix"

@@ -1,31 +1,41 @@
-# AirXonix RE
+# AirXonix RE — Android ARM64 (r373)
 
-Reverse-engineered native AirXonix implementation and platform ports maintained as separate branches.
+Android Studio / Gradle source project for AirXonix native reimplementation. This branch is the **r373 public-source snapshot** and includes Android touch controls, SDL2 integration, GLES2 renderer, assets generator, and tests. This is **not** the same revision as PortMaster r386; the latter's LAN multiplayer menu has not been integrated into this branch.
 
-> **Project status:** Experimental community reimplementation; hardware-dependent features must be tested on target devices. This repository is not affiliated with the original developers.
+## Prerequisites
 
-## Choose a branch
+- JDK 17, Android Gradle Plugin compatible with Gradle 8.7
+- Android SDK Platform 35, Android NDK **27.2.12479018**, CMake 3.22.1
+- Python 3, NumPy and Pillow for replacement textures
+- Network access to clone **SDL2 release-2.30.12** or a previously prepared checkout in `third_party/SDL`
 
-| Branch | Target | Snapshot | Key features |
-| --- | --- | --- | --- |
-| [`portmaster`](../../tree/portmaster) | Anbernic RG40XX H, H700 Linux / PortMaster, ARMHF, SDL2 and OpenGL ES2 | r386 | Cleanroom resource generator, native renderer, local Wi-Fi two-player coop, in-game Host/Join menu and LAN discovery |
-| [`android`](../../tree/android) | Android (ARM64), SDL2 / OpenGL ES | r373 | Android Studio / Gradle project, touchscreen and virtual controller support |
+## Build without copyrighted game resources
 
-The implementations share an AirXonix native game core but **are not automatically identical**: PortMaster r386 and Android r373 are different development snapshots. Changes should be ported between branches deliberately, built, and regression-tested.
+```bash
+python3 -m pip install numpy pillow
+python3 native/tools/generate_cleanroom_resources.py generated/cleanroom
+mkdir -p app/src/main/assets
+cp generated/AirXonix-cleanroom.zip app/src/main/assets/
+bash scripts/prepare_sdl2.sh
+gradle --no-daemon --console=plain :app:assembleDebug
+```
 
-## Build and source
+Install `app/build/outputs/apk/debug/app-debug.apk` on an Android ARM64 device (Android 8.0+). The project does not include private signing credentials; the debug APK is for development/testing.
 
-- [PortMaster instructions](../../blob/portmaster/README_MULTIPLAYER_RU.md) (Russian) and [English](../../blob/portmaster/README_MULTIPLAYER_EN.md)
-- [Android instructions](../../blob/android/README_ANDROID_RU.md) (Russian) and [English](../../blob/android/README_ANDROID_EN.md)
-- Clean-room asset generation lives in the PortMaster [`tools/`](../../tree/portmaster/tools) directory. The generated archive is intentionally not versioned in Git.
-- Tests and internal engineering notes are provided in each branch.
+The branch intentionally **omits** original commercial EXE/MUSIC/BMPPACK files, proprietary textures, private signing keys, prebuilt APKs, and generated archives. A separately provided personal game-data package must never be committed to this public repository.
 
-## Copyright, source provenance, and licenses
+### Input
 
-The repository contains code from our native reverse-engineering effort and public-source builds. Original commercial game files, proprietary audio/textures, private signing keys, SDKs/toolchains, compiled APKs, generated archives, and personal data are **not** committed.
+- On-screen D-Pad/virtual stick and A/B buttons, multi-touch, Android software keyboard for high-score name input.
+- SDL2 Bluetooth/USB gamepad support.
+- Touch input implementation in [`native/src/platform/`](native/src/platform/) and Android bridge in [`app/src/main/java/`](app/src/main/java/).
 
-No license grant for original proprietary AirXonix game assets is implied. A project-wide open-source license has not been selected yet; until it is explicitly selected, do not assume permission to redistribute or relicense code. The original game's trademarks belong to their respective owners.
+### Continuous integration
 
-## Contributing
+The [Android GitHub Actions workflow](.github/workflows/android-apk.yml) builds a **clean-room debug APK** from this source tree. It does not require personal original assets or app-signing keys.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Keep platform-specific changes on the appropriate branch, use small PRs, and attach build logs and applicable tests.
+### Validation
+
+This snapshot is the public r373 Android source tree. Compilation and runtime behavior on an actual handset must be checked with Android Studio or CI; no successful workflow run is claimed yet. Earlier internal build notes might reference original personal assets; those files are not in the public branch.
+
+For the newer PortMaster coop implementation see [`portmaster`](https://github.com/kozinenko2-lab/AirXonix-RE/tree/portmaster).

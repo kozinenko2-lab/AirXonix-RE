@@ -1,12 +1,33 @@
-# Personal original commercial game resources: NEVER commit to public GitHub
-app/src/main/assets/AirXonix.wrp.exe
-app/src/main/assets/MUSIC/
-app/src/main/assets/AirXonix-cleanroom.zip
-app/build/
+# Android Studio / Gradle outputs
 .gradle/
+.idea/
 .cxx/
 build/
-third_party/
+app/build/
 local.properties
+**/local.properties
+third_party/
+*.iml
+*.log
 *.apk
 *.aab
+*.so
+*.o
+*.a
+# Commercial resource files (do not publish)
+app/src/main/assets/AirXonix.wrp.exe
+app/src/main/assets/BMPPACK
+app/src/main/assets/MUSIC/
+app/src/main/assets/SOUNDINF.bin
+app/src/main/assets/AirXonix-cleanroom.zip
+generated/
+assets/
+# Signing and credentials
+*.jks
+*.keystore
+*.p12
+*.pfx
+**/keystore.properties
+**/signing.properties
+.env
+.env.*

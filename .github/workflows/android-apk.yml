@@ -1,10 +1,14 @@
-name: Build AirXonix r367 Android (generated assets)
+name: Android ARM64 clean-room APK
 on:
   push:
-    branches: [airxonix-r367-h700-android]
+    branches: [android]
+  pull_request:
+    branches: [android]
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
-  apk:
+  debug-apk:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -24,30 +28,20 @@ jobs:
         run: |
           yes | sdkmanager --licenses >/dev/null || true
           sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;27.2.12479018' 'cmake;3.22.1'
-      - name: Expand H700 + Android source archive
-        shell: bash
-        run: |
-          python3 - <<'PYEXTRACT'
-          from pathlib import Path
-          from zipfile import ZipFile
-          with ZipFile('AirXonix-H700-Android-r367-public-source.zip') as z:
-              z.extractall('build_source')
-          PYEXTRACT
-      - name: Create original-free assets
-        working-directory: build_source/AirXonix-Android-r367
+      - name: Generate clean-room resource pack
         shell: bash
         run: |
           python3 -m pip install --disable-pip-version-check numpy pillow
           python3 native/tools/generate_cleanroom_resources.py generated/cleanroom
+          mkdir -p app/src/main/assets
           cp generated/AirXonix-cleanroom.zip app/src/main/assets/AirXonix-cleanroom.zip
-      - name: Install matched SDL2 Java and native source
-        working-directory: build_source/AirXonix-Android-r367
+      - name: Install matched SDL2 C, JNI and Java sources
         run: bash scripts/prepare_sdl2.sh
-      - name: Build Android debug APK (ARM64)
-        working-directory: build_source/AirXonix-Android-r367
+      - name: Build debug APK (ARM64)
         run: gradle --no-daemon --console=plain :app:assembleDebug
       - uses: actions/upload-artifact@v4
+        if: success()
         with:
-          name: AirXonix-r367-Android-ARM64-cleanroom
-          path: build_source/AirXonix-Android-r367/app/build/outputs/apk/debug/app-debug.apk
+          name: AirXonix-r373-Android-ARM64-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error

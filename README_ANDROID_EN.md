@@ -1,9 +1,24 @@
-# AirXonix r367 — self-contained Android ARM64 build project
+# AirXonix Android r373 — public source tree
 
-Builds an installable APK with an Android C++ libmain.so, SDL2 2.30.12, OpenGL ES2, and packaged original user-supplied AirXonix.wrp.exe / MUSIC (11 tracks) plus fallback clean-room assets. The Windows EXE is a resource container; the native port executes instead of emulating Windows. App-private storage holds extracted assets, highscores and settings. No external folders or Internet are required when the APK is installed.
+This is the **source** for the ARM64 Android build: Gradle/Android application, native SDL2+GLES2 implementation, Java bridge, touch/virtual controls and tests. For full setup use [README.md](README.md).
 
-To build: use Android Studio / JDK 17 / Android SDK 35 / Android NDK / CMake 3.22.1 / Gradle 8.7; run `bash scripts/prepare_sdl2.sh` and `gradle :app:assembleDebug`. Result: `app/build/outputs/apk/debug/app-debug.apk`. Alternatively upload this project into your GitHub repo and run the included `.github/workflows/android-apk.yml` Actions workflow, then download the APK artifact.
+## Build using generated replacement assets
 
-Controls: multi-touch D-pad, A/B/pause, Bluetooth/USB controller; vibrator 82%/260ms; landscape 4:3 letterboxing. Android 8+ ARM64.
+Requirements: JDK 17, Gradle 8.7, Android SDK API 35, Android NDK 27.2.12479018, CMake 3.22.1, Python 3 with NumPy and Pillow, and SDL2 2.30.12 source.
 
-Status: Android APK compilation and physical device testing are NOT performed in this container (SDK/NDK/Gradle unavailable). This is a buildable-intent source project, not a verified APK.
+```bash
+python3 -m pip install numpy pillow
+python3 native/tools/generate_cleanroom_resources.py generated/cleanroom
+mkdir -p app/src/main/assets
+cp generated/AirXonix-cleanroom.zip app/src/main/assets/
+bash scripts/prepare_sdl2.sh
+gradle --no-daemon :app:assembleDebug
+```
+
+The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`. The workflow in `.github/workflows/android-apk.yml` should run these same steps on GitHub Actions.
+
+**Public-source note:** Commercial EXE/MUSIC/BMPPACK files, private signed builds, and Android signing keys are deliberately omitted. The public GitHub branch does not include any user's personal original-game package.
+
+Touch input supports a virtual analog stick mapped to cardinal directions, A/B, multitouch, name-entry soft keyboard, and gamepads.
+
+Build success and handset behavior must be confirmed by CI/device testing. For H700 Wi-Fi coop, see the separate [portmaster branch](https://github.com/kozinenko2-lab/AirXonix-RE/tree/portmaster).

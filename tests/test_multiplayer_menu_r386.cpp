@@ -39,6 +39,18 @@ int main(){
     int textured=0;
     for(const auto& s:sprites)if(s.atlas==LegacyHudAtlas::MenuMP)++textured;
     assert(textured==4);
+    for(const auto& sp:sprites)if(sp.atlas==LegacyHudAtlas::MenuMP){
+        assert(sp.v0>=0.f && sp.v1>sp.v0 && sp.v1<=1.f);
+    }
+    LegacyHudState options{};
+    options.screen=LegacyHudScreen::Settings;
+    options.settingsSelected=6;
+    const auto settingsSprites=LegacyHud::compose(options);
+    int retroSettingPlates=0;
+    for(const auto& sp:settingsSprites)if(sp.atlas==LegacyHudAtlas::MenuMP){
+        assert(sp.v0>=.5f && sp.v1<=1.f);++retroSettingPlates;
+    }
+    assert(retroSettingPlates==2);
     game.startCoopSession(0);
     assert(game.coopEnabled());
     game.endCoopSessionToMenu();

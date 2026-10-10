@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 SR=22050
-PACK_VERSION="r386"
+PACK_VERSION="r387"
 COUNTS=[7,15,20,20,20]
 STARTS=[0,7,22,42,62]
 MODE_NAMES=["ПРОСТАЯ","КЛАССИКА","МОДЕРН","ХАРД","ЭКСТРИМ"]
@@ -39,7 +39,7 @@ SPECIAL_DIMS={
 "TOU2":(256,48),"LEV2":(256,64),"1111":(128,128),"LOGO":(256,256),"fnt4":(256,256),
 "on++":(64,38),"off+":(64,38),"TEMP":(256,4),"LAXY":(64,64),"AAAA":(64,64),"RRRR":(64,64),
 "M101":(256,42),"M102":(256,42),"M103":(256,42),"M104":(256,42),"M105":(256,42),"M106":(256,42),
-"MPMENU":(256,256),
+"MPMENU":(256,512),
 "M250":(256,42),"M260":(256,42),"M240":(256,42),"M210":(256,42),"M220":(256,42),"M230":(256,42),
 }
 THEME_NAMES={"0034","TST1","0057","VOL3","TST2","0212","SKY7","TST3","0007","VOL9","TST4","0214",
@@ -214,18 +214,47 @@ def make_font_atlas():
         d.text((x,y),ch,font=f,fill=(245,250,255,255))
     return im
 
+# The authored artwork under art/menu/ was generated specifically for this
+# open-source reimplementation, not extracted from the proprietary BMPPACK.
+# Sprite dimensions are preserved by resizing at build time.
+RETRO_MENU_DIR=Path(__file__).resolve().parent.parent / "art" / "menu"
+
+def retro_menu_art(name:str,w:int,h:int)->Image.Image:
+    src=RETRO_MENU_DIR/(name+".png")
+    if not src.is_file():
+        raise FileNotFoundError(f"Missing clean-room menu art: {src}")
+    return Image.open(src).convert("RGBA").resize((w,h),Image.Resampling.LANCZOS)
+
+def metallic_menu_strip(label:str,w:int,h:int)->Image.Image:
+    """Original-style steel slab and embossed golden typography for legacy rows."""
+    im=transparent(w,h)
+    d=ImageDraw.Draw(im)
+    # Compact bevelled steel sign - generated art; no commercial pixels used.
+    d.rounded_rectangle((2,3,w-3,h-4),radius=3,fill=(85,91,99,255),outline=(9,13,18,255),width=2)
+    d.rectangle((6,7,w-7,h-8),fill=(78,88,98,255),outline=(194,205,208,255),width=1)
+    for y in range(8,h-8):
+        shade=int(8*math.sin(y*.75)+5*math.sin(y*2.2))
+        d.line((7,y,w-8,y),fill=(max(0,77+shade),max(0,86+shade),max(0,95+shade),90))
+    d.line((9,9,w-10,9),fill=(209,213,209,225),width=1)
+    d.line((9,h-11,w-10,h-11),fill=(24,30,38,235),width=1)
+    f=fit_font(label,(w-20,h-12),28)
+    bb=d.textbbox((0,0),label,font=f,stroke_width=1)
+    x=(w-(bb[2]-bb[0]))//2-bb[0];y=(h-(bb[3]-bb[1]))//2-bb[1]-1
+    d.text((x+2,y+3),label,font=f,fill=(8,10,11,255),stroke_width=3,stroke_fill=(6,7,8,255))
+    d.text((x,y),label,font=f,fill=(230,172,60,255),stroke_width=1,stroke_fill=(74,36,7,255))
+    d.text((x,y-1),label,font=f,fill=(250,214,114,155),stroke_width=0)
+    return im
+
 def make_texture(name:str):
     w,h=dims(name)
     if name=="fnt4":return make_font_atlas()
     if name=="MPMENU":
-        im=transparent(256,256)
-        for label,y,accent in [
-            ("МУЛЬТИПЛЕЕР",0,(70,230,255,255)),
-            ("HOST",64,(65,195,240,255)),
-            ("JOIN",128,(65,195,240,255)),
-            ("BACK",192,(160,90,250,255))]:
-            im.alpha_composite(banner(label,256,64,accent),(0,y))
+        im=transparent(256,512)
+        for label,y in [("MULTIPLAYER",0),("HOST",64),("JOIN",128),
+                        ("BACK",192),("LIVES",256),("TIME",320)]:
+            im.alpha_composite(retro_menu_art(label,256,64),(0,y))
         return im
+    if name=="M105":return retro_menu_art("MULTIPLAYER",256,42)
     if name in THEME_NAMES:return environment(name,w,h)
     if name in {"BALL","XONI","SPEE","MONY","HEAR","CLCK"}:
         return radial_icon(name,w,h,{"BALL":"orange","XONI":"cyan","SPEE":"purple","MONY":"gold","HEAR":"red","CLCK":"cyan"}[name])
@@ -283,7 +312,9 @@ def make_texture(name:str):
       "M250":"СКОРОСТЬ","M260":"ЗВУКИ","M240":"МУЗЫКА","M210":"РЕЧЬ","M220":"УПРАВЛЕНИЕ","M230":"ВОЗВРАТ",
       "on++":"ДА","off+":"НЕТ"
     }
-    if name in labels:return banner(labels[name],w,h,(45,215,245,255) if not name.startswith('M2') else (170,90,255,255))
+    if name in labels and (name.startswith("M1") or name.startswith("M2")):
+        return metallic_menu_strip(labels[name],w,h)
+    if name in labels:return banner(labels[name],w,h,(45,215,245,255))
     return banner(name,w,h)
 
 def save_tga(im:Image.Image,path:Path):
@@ -414,7 +445,7 @@ def main():
     build_atlas(tex,[("IN2$",0,0),("IN2T",128,0),("IN2L",0,48),("IN2S",128,48),("IN2A",0,96),("TOU2",0,144),("LEV2",0,192)],atl/'atlas7_info.tga')
     build_atlas(tex,[("M101",0,0),("M102",0,42),("M103",0,84),("M104",0,126),("M105",0,168),("M106",0,210)],atl/'atlas4_menu_m1.tga')
     manifest=root/'cleanroom'/'MANIFEST.txt';manifest.parent.mkdir(parents=True,exist_ok=True)
-    manifest.write_text("AirXonix Native clean-room resource pack %s\nGenerated assets only; no bytes copied from the commercial executable or its MUSIC/BMPPACK/SOUNDINF resources.\nTextures: %d TGA tiles + 5 reference atlases\nMusic: 10 synthesized raw U8 stereo 22050 Hz loops with click-safe edges\nSFX: synthesized 29.MUS bank, 50 samples, exact compatibility lengths\nLevels: 82 newly generated records across 5 modes in SOUNDINF.bin\n"%(PACK_VERSION,len(TEXTURE_NAMES)),encoding='utf-8')
+    manifest.write_text("AirXonix Native clean-room resource pack %s\nGenerated assets only; no bytes copied from the commercial executable or its MUSIC/BMPPACK/SOUNDINF resources.\nTextures: %d TGA tiles + 5 reference atlases\nMetallic menu art and initial lives/time plates generated or authored for this project; no commercial menu textures.\nMusic: 10 synthesized raw U8 stereo 22050 Hz loops with click-safe edges\nSFX: synthesized 29.MUS bank, 50 samples, exact compatibility lengths\nLevels: 82 newly generated records across 5 modes in SOUNDINF.bin\n"%(PACK_VERSION,len(TEXTURE_NAMES)),encoding='utf-8')
     # Deterministic integrity list for the distributable replacement pack.
     sums=[]
     for p in sorted(x for x in root.rglob('*') if x.is_file() and x.name!='SHA256SUMS.txt'):

@@ -166,7 +166,10 @@ std::vector<LegacyHudSprite> compose(const LegacyHudState& s){
         // Each menu strip is a real clean-room TGA sprite in MPMENU, not
         // a temporary text overlay. Same glass/neon theme as M101..M106.
         auto add=[&](int y,int sy,float bright,float width,float height){
-            out.push_back({LegacyHudAtlas::MenuMP,320.f-width*.5f,float(y),width,height,0,sy,256,64,bright});
+            LegacyHudSprite plate{LegacyHudAtlas::MenuMP,320.f-width*.5f,float(y),width,height,0,sy,256,64,bright};
+            plate.u0=0.f;plate.u1=1.f;
+            plate.v0=float(sy)/512.f;plate.v1=float(sy+64)/512.f;
+            out.push_back(plate);
         };
         add(38,0,1.f,288.f,55.f); // heading
         for(int i=0;i<3;++i)add(136+i*65,64+i*64,i==selected?1.f:0.58f,i==selected?290.f:256.f,52.f);
@@ -326,13 +329,22 @@ std::vector<LegacyHudSprite> compose(const LegacyHudState& s){
         // exact 3D 0x402A50 meshes (0x257F584/0x257F580) rendered by Renderer
         // with texture slots 4/3 respectively. Keep only the speech mesh in
         // this 2D compatibility command list.
-        // Native debug rows requested for hardware tuning. Keep them visually
-        // neutral instead of labelling the menu as a TEST build.
+        // Native Lives / Time extension now uses the same embossed-metal
+        // menu art from the clean-room atlas, not debug text boxes.
+        auto addInitialSetting=[&](int sy,int y,bool selected){
+            LegacyHudSprite plate{LegacyHudAtlas::MenuMP,360.f,float(y),167.f,28.f,
+                                   0,sy,256,64,selected?1.f:0.75f};
+            plate.u0=0.f;plate.u1=1.f;
+            plate.v0=float(sy)/512.f;plate.v1=float(sy+64)/512.f;
+            out.push_back(plate);
+        };
+        addInitialSetting(256,2,s.settingsSelected==6);
+        addInitialSetting(320,34,s.settingsSelected==7);
         char testLine[48];
-        std::snprintf(testLine,sizeof(testLine),"LIVES: %02d",s.testInitialLives);
-        fontText(out,testLine,24,0,s.settingsSelected==6?0x00ff00u:0xafafafu);
-        std::snprintf(testLine,sizeof(testLine),"TIME : %03d",s.testInitialTimeSeconds);
-        fontText(out,testLine,24,1,s.settingsSelected==7?0x00ff00u:0xafafafu);
+        std::snprintf(testLine,sizeof(testLine),"%02d",s.testInitialLives);
+        fontText(out,testLine,34,0,s.settingsSelected==6?0xffd969u:0xffffffu);
+        std::snprintf(testLine,sizeof(testLine),"%03d",s.testInitialTimeSeconds);
+        fontText(out,testLine,34,1,s.settingsSelected==7?0xffd969u:0xffffffu);
     }else if(s.screen==LegacyHudScreen::Controls){
         // r155 DIRECT EXE: 0x410E3A..0x411254 writes a 40x15 text grid and
         // renders it with fnt4 in logical texture slot 5. Byte strings below

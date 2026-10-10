@@ -1,4 +1,4 @@
-# AirXonix RE — PortMaster / Anbernic H700 (r386)
+# AirXonix RE — PortMaster / Anbernic H700 (r387)
 
 A reverse-engineered native game core for the Anbernic RG40XX H class of Linux handhelds, using **ARMHF**, **SDL2** and **OpenGL ES2**. This branch contains the complete public source snapshot, not a standalone executable release.
 
@@ -32,6 +32,10 @@ Use identical builds on both devices. One console selects **Host**, the other **
 
 ## Verification status
 
-Local compilation and selected automated LAN/UI tests were previously performed for r386. **Full playthrough and real two-console H700 Wi-Fi tests have not been verified.** See the r386 release notes for details.
+Local compilation and selected automated LAN/UI tests were previously performed for r386. **Full playthrough and real two-console H700 Wi-Fi tests have not been verified.** See the r387 artwork and credits notes for details.
 
 See the [Android branch](https://github.com/kozinenko2-lab/AirXonix-RE/tree/android) for an independent earlier Android r373 source snapshot. Do not merge the platform branches blindly.
+
+## Acknowledgements and graphics
+
+See [original authors and memorial dedication (English)](CREDITS.md) / [Русские титры](CREDITS_RU.md), and [H700 graphics quality roadmap](docs/GRAPHICS_OPTIONS_RU.md). Metal-style clean-room menu art is stored under [`art/menu/`](art/menu/); rebuild the generated asset pack with NumPy and Pillow. The graphical upgrade is active in the menus; the optional gameplay shaders described in the roadmap are not yet implemented.

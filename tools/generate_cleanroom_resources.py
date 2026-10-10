@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 SR=22050
-PACK_VERSION="r388"
+PACK_VERSION="r389"
 COUNTS=[7,15,20,20,20]
 STARTS=[0,7,22,42,62]
 MODE_NAMES=["ПРОСТАЯ","КЛАССИКА","МОДЕРН","ХАРД","ЭКСТРИМ"]
@@ -225,24 +225,29 @@ def retro_menu_art(name:str,w:int,h:int)->Image.Image:
         raise FileNotFoundError(f"Missing clean-room menu art: {src}")
     return Image.open(src).convert("RGBA").resize((w,h),Image.Resampling.LANCZOS)
 
-def metallic_menu_strip(label:str,w:int,h:int)->Image.Image:
-    """Original-style steel slab and embossed golden typography for legacy rows."""
-    im=transparent(w,h)
+def metallic_menu_strip(label:str,w:int,h:int,kind:str="pink")->Image.Image:
+    """Clean-room marble and embossed yellow letters, matching the original
+    broad pink M1 / blue M2 material families without copying proprietary pixels."""
+    rng=np.random.default_rng(seed(label+kind))
+    yy,xx=np.mgrid[0:h,0:w]
+    marble=(9*np.sin(xx*.086+yy*.067)+10*np.cos(xx*.061-yy*.10)
+        +7*np.sin(xx*.24+yy*.42)+rng.integers(-5,6,size=(h,w)))
+    base=(140,121,133) if kind=="pink" else (16,90,149)
+    rgb=np.zeros((h,w,4),dtype=np.uint8)
+    for c in range(3):rgb[:,:,c]=np.clip(base[c]+marble,0,255).astype('uint8')
+    rgb[:,:,3]=255
+    im=Image.fromarray(rgb,'RGBA')
     d=ImageDraw.Draw(im)
-    # Compact bevelled steel sign - generated art; no commercial pixels used.
-    d.rounded_rectangle((2,3,w-3,h-4),radius=3,fill=(85,91,99,255),outline=(9,13,18,255),width=2)
-    d.rectangle((6,7,w-7,h-8),fill=(78,88,98,255),outline=(194,205,208,255),width=1)
-    for y in range(8,h-8):
-        shade=int(8*math.sin(y*.75)+5*math.sin(y*2.2))
-        d.line((7,y,w-8,y),fill=(max(0,77+shade),max(0,86+shade),max(0,95+shade),90))
-    d.line((9,9,w-10,9),fill=(209,213,209,225),width=1)
-    d.line((9,h-11,w-10,h-11),fill=(24,30,38,235),width=1)
-    f=fit_font(label,(w-20,h-12),28)
+    d.line((0,0,w-1,0),fill=(210,193,196,255),width=1)
+    d.line((0,0,0,h-1),fill=(210,193,196,255),width=1)
+    d.line((0,h-1,w-1,h-1),fill=(38,32,36,255),width=2)
+    d.line((w-1,0,w-1,h-1),fill=(49,38,44,255),width=1)
+    f=fit_font(label,(w-14,h-8),max(12,int(h*.73)))
     bb=d.textbbox((0,0),label,font=f,stroke_width=1)
     x=(w-(bb[2]-bb[0]))//2-bb[0];y=(h-(bb[3]-bb[1]))//2-bb[1]-1
-    d.text((x+2,y+3),label,font=f,fill=(8,10,11,255),stroke_width=3,stroke_fill=(6,7,8,255))
-    d.text((x,y),label,font=f,fill=(230,172,60,255),stroke_width=1,stroke_fill=(74,36,7,255))
-    d.text((x,y-1),label,font=f,fill=(250,214,114,155),stroke_width=0)
+    d.text((x+2,y+3),label,font=f,fill=(12,9,8,255),stroke_width=2,stroke_fill=(12,9,8,255))
+    d.text((x,y),label,font=f,fill=(242,184,26,255),stroke_width=1,stroke_fill=(64,39,7,255))
+    d.text((x,y-1),label,font=f,fill=(250,217,84,90))
     return im
 
 def make_texture(name:str):
@@ -251,7 +256,7 @@ def make_texture(name:str):
     if name=="MPMENU":
         im=transparent(256,512)
         for label,y in [("MULTIPLAYER",0),("HOST",64),("JOIN",128),
-                        ("BACK",192),("LIVES",256),("TIME",320)]:
+                        ("BACK",192),("LIVES",256),("TIME",320),("GRAPHICS",384)]:
             im.alpha_composite(retro_menu_art(label,256,64),(0,y))
         return im
     if name=="M105":return retro_menu_art("MULTIPLAYER",256,42)
@@ -313,7 +318,7 @@ def make_texture(name:str):
       "on++":"ДА","off+":"НЕТ"
     }
     if name in labels and (name.startswith("M1") or name.startswith("M2")):
-        return metallic_menu_strip(labels[name],w,h)
+        return metallic_menu_strip(labels[name],w,h,"blue" if name.startswith("M2") else "pink")
     if name in labels:return banner(labels[name],w,h,(45,215,245,255))
     return banner(name,w,h)
 

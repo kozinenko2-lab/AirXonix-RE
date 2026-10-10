@@ -43,3 +43,7 @@ See the [Android branch](https://github.com/kozinenko2-lab/AirXonix-RE/tree/andr
 ## Authors, original-style art and enhancement plan
 
 See [Credits](CREDITS.md), [Авторы и благодарности](CREDITS_RU.md), the new authored [metallic menu sprites](art/menu/), and [OpenGL ES2 graphics options proposal](docs/GRAPHICS_OPTIONS_RU.md). The original game remains credited to its authors and AxySoft; project textures do not include original commercial artwork. Optional gameplay shaders have not been implemented yet.
+
+## r389 — графика и бонус Магнит
+
+См. [описание r389](R389-CHANGES-RU.md) и [режимы OpenGL ES2](docs/GRAPHICS_OPTIONS_RU.md). В PortMaster: Настройки → Графика (ORIGINAL/SHARP/ENHANCED/TOON) и Новые бонусы (ДА/НЕТ).

@@ -63,6 +63,7 @@ void Game::showMainMenuOnBoot(){
 bool Game::initializeLegacySettings(const std::filesystem::path& path){
     settingsPath_=path;
     { std::ifstream ext(path.string()+".bonuses.ini");int on=0; if(ext>>on)setNewBonusesEnabled(on==1); }
+    { std::ifstream ext(path.string()+".graphics.ini");int mode=0; if(ext>>mode)setGraphicsMode(mode); }
     struct RawSettings { float speed,sfx,music; std::int32_t reserved; std::int32_t keys[4]; std::int32_t speech; };
     static_assert(sizeof(RawSettings)==LegacySettingsTrace::fileSize);
     RawSettings raw{};
@@ -99,6 +100,8 @@ bool Game::saveLegacySettingsNow() const{
     if(!f)return false;
     std::ofstream ext(settingsPath_.string()+".bonuses.ini",std::ios::trunc);
     if(ext)ext<<(settings_.newBonuses?1:0)<<"\n";
+    std::ofstream graphics(settingsPath_.string()+".graphics.ini",std::ios::trunc);
+    if(graphics)graphics<<settings_.graphicsMode<<"\n";
     return true;
 }
 
@@ -351,6 +354,7 @@ void Game::applyExtendedBonus(PickupEffect effect){
     case PickupEffect::TwoLives:lives_=std::min(99,lives_+2);break;
     case PickupEffect::DoubleScore:bonuses_.grant(airxonix::bonus::Kind::ScoreX2);break;
     case PickupEffect::SafeTail:bonuses_.grant(airxonix::bonus::Kind::SafeTail);break;
+    case PickupEffect::Magnet:bonuses_.grant(airxonix::bonus::Kind::Magnet);break;
     default:break;
     }
 }
@@ -382,9 +386,9 @@ int Game::updatePickupRuntime(int dtMs,const PickupCollectorState& collector,boo
     if(coopSecond){
         const std::array<PickupCollectorState,2> collectors{collector,*coopSecond};
         effects=pickups_.updateWithCollectors(dtMs,field_,collectors.data(),collectors.size(),
-                                               entities_,rng_,timer_,lives_,allowPlayerCollection);
+                                               entities_,rng_,timer_,lives_,allowPlayerCollection,bonuses_.magnet());
     }else{
-        effects=pickups_.updateWithCollector(dtMs,field_,collector,entities_,rng_,timer_,lives_,allowPlayerCollection);
+        effects=pickups_.updateWithCollectors(dtMs,field_,&collector,1,entities_,rng_,timer_,lives_,allowPlayerCollection,bonuses_.magnet());
     }
     for(PickupEffect e:effects){
         // Original slot #5 (?) already resolves to an original effect.
@@ -1678,7 +1682,7 @@ void Game::updateSettings(const InputState& input,int dtMs){
     const int dt=std::max(0,dtMs);
     // 0x4136E6..0x413704 updates the retained Settings test voice every loop.
     queueDeathSpatialUpdate(DeathAudioVoiceTag::SettingsVoice,0.f,0.f,settings_.selected==1?0.1f:5.f);
-    for(int i=0;i<9;++i){
+    for(int i=0;i<10;++i){
         const bool sel=i==settings_.selected;
         settings_.brightness[std::size_t(i)]=LegacyMainMenuRuntime::approach(
             settings_.brightness[std::size_t(i)],sel?1.f:0.6f,float(dt)*0.002f);
@@ -1798,6 +1802,17 @@ void Game::updateSettings(const InputState& input,int dtMs){
         }
     }else settings_.newBonusesLrLatched=false;
 
+    // Graphics is a local presentation choice; never affects physics/RNG/network.
+    if(settings_.selected==9){
+        const bool lr=input.left||input.right;
+        if(!lr)settings_.graphicsLrLatched=false;
+        else if(!settings_.graphicsLrLatched){
+            settings_.graphicsLrLatched=true;
+            setGraphicsMode((settings_.graphicsMode+(input.right?1:3))%4);
+            queueDeathSimple(0x16u);
+        }
+    }else settings_.graphicsLrLatched=false;
+
     const bool nav=input.up||input.down||input.action||input.back;
     if(!nav){settings_.navLatched=false;return;}
     if(settings_.navLatched)return;
@@ -1805,14 +1820,14 @@ void Game::updateSettings(const InputState& input,int dtMs){
     if(input.up){
         const int old=settings_.selected;
         // Above SPEED are TIME and LIVES. UP from SPEED reaches this mod panel.
-        settings_.selected=(old==0?8:(old==8?7:(old==7?6:std::max(0,old-1))));
+        settings_.selected=(old==0?9:(old==9?8:(old==8?7:(old==7?6:std::max(0,old-1)))));
         if(settings_.selected!=old){queueDeathSimple(0x15u);advanceSelector();}
         return;
     }
     if(input.down){
         const int old=settings_.selected;
         // DOWN from LIVES -> TIME -> SPEED; EXIT remains the last original row.
-        settings_.selected=(old==6?7:(old==7?8:(old==8?0:std::min(5,old+1))));
+        settings_.selected=(old==6?7:(old==7?8:(old==8?9:(old==9?0:std::min(5,old+1)))));
         if(settings_.selected!=old){queueDeathSimple(0x15u);advanceSelector();}
         return;
     }
@@ -1827,6 +1842,7 @@ void Game::updateSettings(const InputState& input,int dtMs){
     }
     if(input.action){
         if(settings_.selected==8){setNewBonusesEnabled(!settings_.newBonuses);queueDeathSimple(0x16u);return;}
+        if(settings_.selected==9){setGraphicsMode((settings_.graphicsMode+1)%4);queueDeathSimple(0x16u);return;}
         if(settings_.selected==3){settings_.speech=!settings_.speech;speechEnabled_=settings_.speech;queueDeathSimple(0x16u);return;}
         if(settings_.selected==4){
             settings_.readyForInput=false;

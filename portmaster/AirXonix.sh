@@ -1,5 +1,5 @@
 #!/bin/bash
-# AirXonix r386 — single PortMaster launcher (ARMHF / Allwinner H700).
+# AirXonix r389 — single PortMaster launcher (ARMHF / Allwinner H700).
 # Single player and Wi-Fi Host/Join are selected from INSIDE the game.
 set -u
 PORT_NAME="AirXonix"
@@ -17,7 +17,7 @@ mkdir -p "$PORT_DIR/logs" "$PORT_DIR/saves"
 LOG="$PORT_DIR/logs/AirXonix.log"
 : > "$LOG"
 exec >>"$LOG" 2>&1
-printf 'AirXonix r386 (single launcher) %s\n' "$(date 2>/dev/null || true)"
+printf 'AirXonix r389 (single launcher) %s\n' "$(date 2>/dev/null || true)"
 echo "PORT_DIR=$PORT_DIR architecture=$(uname -m 2>/dev/null || echo unknown)"
 for ctrl in \
     "$PORT_ROOT/PortMaster/control.txt" \

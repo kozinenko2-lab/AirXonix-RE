@@ -55,7 +55,7 @@ enum class PickupEffect : int {
     CameraZoomIn=6,
     Blackout=7,
     CameraShake=8,
-    Shield=9,Freeze=10,TwoLives=11,DoubleScore=12,SafeTail=13
+    Shield=9,Freeze=10,TwoLives=11,DoubleScore=12,SafeTail=13,Magnet=14
 };
 
 class Pickups {
@@ -80,7 +80,7 @@ public:
     std::vector<PickupEffect> updateWithCollectors(int dtMs,const Field& field,
                               const PickupCollectorState* collectors,std::size_t count,
                               const Entities& entities,LegacyRandom& rng,int levelTimerMs,int lives,
-                              bool allowPlayerCollection=true);
+                              bool allowPlayerCollection=true,bool magnetic=false);
     void networkView(const std::array<Pickup,Count>& items,int angle){
         items_=items;presentationAngle_=angle;
         audioEvents_.clear();smashEvents_.clear();audioLoopActive_.fill(false);

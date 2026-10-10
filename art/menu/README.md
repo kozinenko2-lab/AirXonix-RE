@@ -1,9 +1,13 @@
-# New retro-metallic AirXonix menu assets
+# AirXonix menu extensions (clean-room artwork)
 
-Six newly generated, project-specific illustration-based sprite PNGs:
-`MULTIPLAYER`, `HOST`, `JOIN`, `BACK`, `LIVES`, and `TIME`.
-Their shape, brushed steel and gold embossed text evoke early-2000s 3D arcade game menus, without containing pixels copied from the original game's BMPPACK.
+Seven newly authored 256x64 PNG plates: MULTIPLAYER, HOST, JOIN, BACK,
+LIVES, TIME, GRAPHICS. The MPMENU 256x512 atlas uses seven 64-pixel rows.
+These project-owned pink and blue marble-like surfaces with embossed gold
+lettering are inspired by the supplied original-game screenshots. No
+proprietary pixels or original executable textures are included.
 
-The generator `tools/generate_cleanroom_resources.py` packs the six sprites into `MPMENU` (256×512). A `MULTIPLAYER` variant also replaces the M105 main-menu label. Other M1/M2 entries are generated in a matching neutral-metal style. User-adjustable initial lives/time counters remain dynamic HUD text adjacent to their styled labels.
+The texture pack generator also synthesizes all original M1/M2 labels with
+matching pink/blue marble families. Only compatible texture dimensions are
+used; runtime button text and values remain independent of binary game data.
 
-Original proprietary game graphics must not be added to this directory. Rebuild resources using `python3 tools/generate_cleanroom_resources.py assets`; it writes the distributable `AirXonix-cleanroom.zip` beside `assets/`.
+Rebuild: python3 tools/generate_cleanroom_resources.py assets

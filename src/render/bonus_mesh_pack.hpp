@@ -10,7 +10,7 @@
 // AXBM v1: portable, validated low-poly meshes loaded ONLY from clean-room ZIP.
 // No original EXE/texture pack is needed for these native extras.
 namespace airxonix::bonus {
-inline bool loadModels(std::array<LegacyMesh,5>& models){
+inline bool loadModels(std::array<LegacyMesh,6>& models){
     std::vector<std::uint8_t> b;
     if(!CleanroomArchive::instance().read("models/bonus_models.axbm",b)||b.size()<8)return false;
     if(std::memcmp(b.data(),"AXBM",4)!=0)return false;
@@ -19,8 +19,8 @@ inline bool loadModels(std::array<LegacyMesh,5>& models){
     auto u16=[&](std::uint16_t& x){if(off+2>b.size())return false;x=std::uint16_t(b[off])|std::uint16_t(b[off+1])<<8;off+=2;return true;};
     auto f32=[&](float& x){if(off+4>b.size())return false;std::uint32_t raw=std::uint32_t(b[off])|std::uint32_t(b[off+1])<<8|std::uint32_t(b[off+2])<<16|std::uint32_t(b[off+3])<<24;off+=4;std::memcpy(&x,&raw,4);return std::isfinite(x);};
     std::uint16_t ver=0,count=0;
-    if(!u16(ver)||!u16(count)||ver!=1||count!=5)return false;
-    std::array<LegacyMesh,5> parsed{};
+    if(!u16(ver)||!u16(count)||ver!=1||count!=6)return false;
+    std::array<LegacyMesh,6> parsed{};
     for(auto& m:parsed){
         std::uint16_t verts=0,faces=0;
         if(!u16(verts)||!u16(faces)||verts<3||verts>2048||faces<1||faces>4096)return false;

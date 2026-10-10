@@ -14,7 +14,7 @@ struct Spawn { int x,y; };
 constexpr Spawn BlueSpawn{20,0};
 constexpr Spawn RedSpawn{44,0};
 constexpr std::uint16_t Port=27840;
-constexpr std::uint16_t ProtocolVersion=8;
+constexpr std::uint16_t ProtocolVersion=9;
 
 struct Rgb { float r,g,b; };
 constexpr Rgb color(Owner o){

@@ -124,7 +124,7 @@ std::vector<PickupEffect> Pickups::updateWithCollector(int dtMs,const Field& fie
 std::vector<PickupEffect> Pickups::updateWithCollectors(int dtMs,const Field& field,
                                           const PickupCollectorState* collectors,std::size_t count,
                                           const Entities& entities,LegacyRandom& rng,int levelTimerMs,int lives,
-                                          bool allowPlayerCollection){
+                                          bool allowPlayerCollection,bool magnetic){
     std::vector<PickupEffect> result;
     if(dtMs<=0)return result;
     for(std::size_t i=0;i<Count;++i){
@@ -136,12 +136,40 @@ std::vector<PickupEffect> Pickups::updateWithCollectors(int dtMs,const Field& fi
             continue;
         }
 
+        // Optional magnetic motion: XY plane follows the nearest Xonix and Y
+        // converges to the raised safe-field surface (.008); the original
+        // fall/collision path remains untouched with the feature disabled.
+        bool pulled=false;
+        if(magnetic && allowPlayerCollection){
+            const PickupCollectorState* nearest=nullptr;
+            float best=.085f*.085f;
+            for(std::size_t c=0;c<count;++c){
+                const auto& who=collectors[c];if(who.worldY>=.03f)continue;
+                const float dx=who.worldX-p.worldX,dz=who.worldZ-p.worldZ;
+                const float d2=dx*dx+dz*dz;
+                if(d2<best){best=d2;nearest=&who;}
+            }
+            if(nearest){
+                const float dx=nearest->worldX-p.worldX,dz=nearest->worldZ-p.worldZ;
+                const float distance=std::sqrt(dx*dx+dz*dz);
+                const float travel=std::min(distance,float(dtMs)*.000080f);
+                if(distance>1.e-7f){p.worldX+=dx/distance*travel;p.worldZ+=dz/distance*travel;}
+                const float lift=float(dtMs)*.000050f;
+                if(p.height<.010f)p.height=std::min(.010f,p.height+lift);
+                else p.height=std::max(.010f,p.height-lift);
+                p.gridX=std::clamp(int(std::lround((p.worldX-kPickupBase)/kCellStep)),0,63);
+                p.gridY=std::clamp(int(std::lround((p.worldZ-kPickupBase)/kCellStep)),0,63);
+                pulled=true;
+                if(audioLoopActive_[i])audioEvents_.push_back({PickupAudioEventKind::SpatialUpdate,i,0u,p.worldX,p.height,p.worldZ,1.f});
+            }
+        }
         const float target=targetHeight(p,field);
         // 0x417A86..0x417B6E: falling pickup audio and exact one-frame landing semantics.
         // The original subtracts dt*1e-4 without clamping; only the following update
         // snaps an overshoot back to target, stops retained bfly (ID 0x0F), and plays
         // one-shot bpop (ID 0x10) at the landed position.
-        if(target<p.height){
+        if(pulled){ /* magnetic override: skip the legacy gravity branch */ }
+        else if(target<p.height){
             p.height-=float(dtMs)*0.00009999999747378752f;
             if(!audioLoopActive_[i]){
                 audioLoopActive_[i]=true;
@@ -178,8 +206,8 @@ std::vector<PickupEffect> Pickups::updateWithCollectors(int dtMs,const Field& fi
             if(i==5 && extendedRandom_){
                 // Preserve original random draw, then use a separate PRNG for extension choice.
                 extensionRng_^=extensionRng_<<13;extensionRng_^=extensionRng_>>17;extensionRng_^=extensionRng_<<5;
-                const unsigned pick=extensionRng_%12u;
-                if(pick<5u)effect=static_cast<PickupEffect>(9+pick);
+                const unsigned pick=extensionRng_%13u;
+                if(pick<6u)effect=static_cast<PickupEffect>(9+pick);
             }
             result.push_back(effect);
             // DIRECT EXE 0x415804..0x41586C: collection has an immediate spatial

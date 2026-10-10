@@ -310,7 +310,7 @@ airxonix::lan::Snapshot Game::makeCoopSnapshot(std::uint32_t serial) const{
     const auto& b=bonuses_.state();
     s.bonusEnabled=bonuses_.enabled()?1:0;s.bonusKind=static_cast<std::uint8_t>(b.kind);
     s.bonusX=b.x;s.bonusZ=b.z;s.bonusHeight=b.height;s.bonusWait=b.waitMs;
-    s.shieldMs=b.shieldMs;s.freezeMs=b.freezeMs;s.scoreMs=b.scoreMs;s.tailMs=b.tailMs;
+    s.shieldMs=b.shieldMs;s.freezeMs=b.freezeMs;s.scoreMs=b.scoreMs;s.tailMs=b.tailMs;s.magnetMs=b.magnetMs;
     const auto& h=specialObjects_.homing();
     s.homing={std::uint8_t(h.active),h.worldX,h.height,h.worldZ,h.spinPhase};
     const auto& e=specialObjects_.eraser();
@@ -409,7 +409,7 @@ bool Game::applyCoopSnapshot(const airxonix::lan::Snapshot& s){
     airxonix::bonus::State bs{};
     bs.kind=static_cast<airxonix::bonus::Kind>(s.bonusKind);
     bs.x=s.bonusX;bs.z=s.bonusZ;bs.height=s.bonusHeight;bs.waitMs=s.bonusWait;
-    bs.shieldMs=s.shieldMs;bs.freezeMs=s.freezeMs;bs.scoreMs=s.scoreMs;bs.tailMs=s.tailMs;
+    bs.shieldMs=s.shieldMs;bs.freezeMs=s.freezeMs;bs.scoreMs=s.scoreMs;bs.tailMs=s.tailMs;bs.magnetMs=s.magnetMs;
     bonuses_.networkState(s.bonusEnabled!=0,bs);
     settings_.newBonuses=bonuses_.enabled();pickups_.setExtendedRandom(settings_.newBonuses);
     specialObjects_.networkPresentation(s.homing.active!=0,s.homing.x,s.homing.y,s.homing.z,s.homing.spin,

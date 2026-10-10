@@ -12,7 +12,7 @@ struct GameTestProbe {static void reset(Game& g){g.startNewSession(0);}};
 
 int main(int argc,char**argv){
     using namespace airxonix;
-    static_assert(coop::ProtocolVersion==8);
+    static_assert(coop::ProtocolVersion>=8);
     bonus::Runtime b;
     assert(!b.enabled());
     b.reset(55);assert(b.state().kind==bonus::Kind::None);
@@ -76,7 +76,7 @@ int main(int argc,char**argv){
 
     if(argc>1){
         std::string err;assert(CleanroomArchive::instance().open(argv[1],&err));
-        std::array<LegacyMesh,5> models{};
+        std::array<LegacyMesh,6> models{};
         assert(bonus::loadModels(models));
         for(const auto& mesh:models)assert(!mesh.vertices.empty()&&!mesh.faces.empty());
         std::vector<std::uint8_t> tex;

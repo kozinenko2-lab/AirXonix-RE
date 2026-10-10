@@ -9,8 +9,8 @@ import math, struct
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
-TYPES=['SHIELD','SNOWFLAKE','LIVES_X2','SCORE_X2','SAFE_TAIL']
-H=256; SLOT=51
+TYPES=['SHIELD','SNOWFLAKE','LIVES_X2','SCORE_X2','SAFE_TAIL','MAGNET']
+H=384; SLOT=64
 
 def model_outline(kind):
     if kind==0:
@@ -25,7 +25,9 @@ def model_outline(kind):
         return [(x*.102,y*.102) for x,y in pts]
     if kind==3:
         return [(math.cos(math.pi/2+i*math.pi/5)*(.55 if i%2==0 else .26),math.sin(math.pi/2+i*math.pi/5)*(.55 if i%2==0 else .26)) for i in range(10)]
-    return [(-.53,-.25),(-.35,.14),(-.1,.55),(.05,.2),(.35,.5),(.28,.08),(.54,-.30),(.02,-.53)]
+    if kind==4:return [(-.53,-.25),(-.35,.14),(-.1,.55),(.05,.2),(.35,.5),(.28,.08),(.54,-.30)]
+    # Horseshoe/U-shaped magnet with open top, procedurally extruded.
+    return [(-.52,.49),(-.22,.49),(-.22,-.04),(-.17,-.24),(.17,-.24),(.22,-.04),(.22,.49),(.52,.49),(.52,-.09),(.4,-.42),(.12,-.57),(-.12,-.57),(-.4,-.42),(-.52,-.09)]
 
 def add_extruded(v,faces,outline,idx):
     if not outline:return
@@ -47,7 +49,7 @@ def add_extruded(v,faces,outline,idx):
 def generate(root:Path):
     root=Path(root);out=root/'models';out.mkdir(parents=True,exist_ok=True)
     meshes=[]
-    for k in range(5):
+    for k in range(6):
         verts=[];faces=[]
         if k==1:
             # Snowflake: six extruded spokes + two side branches each.
@@ -75,9 +77,9 @@ def generate(root:Path):
         for v in verts:data+=struct.pack('<8f',*v)
         for face in faces:data+=struct.pack('<B',len(face))+struct.pack('<'+'H'*len(face),*face)
     (out/'bonus_models.axbm').write_bytes(data)
-    # A matching 256x256 UV atlas with original-style flat bright materials.
-    im=Image.new('RGBA',(256,256),(0,0,0,0));d=ImageDraw.Draw(im)
-    pal=[('#148fce','#e0faff'),('#379cde','#eaffff'),('#c81930','#ffc52f'),('#cc7f0c','#ffdb3d'),('#e74113','#ffb431')]
+    # A matching 256x384 UV atlas with original-style flat bright materials.
+    im=Image.new('RGBA',(256,H),(0,0,0,0));d=ImageDraw.Draw(im)
+    pal=[('#148fce','#e0faff'),('#379cde','#eaffff'),('#c81930','#ffc52f'),('#cc7f0c','#ffdb3d'),('#e74113','#ffb431'),('#d52c3d','#80aaff')]
     for k,(c1,c2) in enumerate(pal):
         off=k*SLOT;cx=128;cy=off+25
         if k==0:
@@ -99,13 +101,20 @@ def generate(root:Path):
         elif k==3:
             pts=[(cx+int(math.cos(math.pi/2+i*math.pi/5)*(22 if i%2==0 else 11)),cy-int(math.sin(math.pi/2+i*math.pi/5)*(21 if i%2==0 else 10))) for i in range(10)]
             d.polygon(pts,fill=c1,outline=c2,width=2);d.text((117,off+15),'x2',fill='#ffe14d')
-        else:
+        elif k==4:
             d.polygon([(75,cy+8),(120,cy-16),(160,cy-12),(184,cy+3),(145,cy+6),(125,cy+19)],fill=c1,outline=c2,width=3)
             d.ellipse((95,cy-9,120,cy+13),fill='#e4db52',outline='#da2418',width=3)
+        else:
+            # Retro arcade low-poly horseshoe: red and blue magnetic poles.
+            d.arc((cx-29,cy-21,cx+29,cy+30),0,180,fill='#faf4a0',width=12)
+            d.line((cx-29,cy-21,cx-29,cy+4),fill='#df3333',width=12)
+            d.line((cx+29,cy-21,cx+29,cy+4),fill='#2d73e4',width=12)
+            d.rectangle((cx-35,cy-27,cx-24,cy-12),fill='#ff9393')
+            d.rectangle((cx+24,cy-27,cx+35,cy-12),fill='#b1d7ff')
     # TGA RLE-free, loaded by the existing GLES texture loader.
     (root/'textures').mkdir(exist_ok=True)
     im.save(root/'textures'/'BONUSX.tga',format='TGA')
-    (out/'README.txt').write_text('AXBM v1: five original-inspired low-poly bonus meshes, local x/y frontal plane.\nTexture: textures/BONUSX.tga 256x256 RGBA.\nNo commercial model data. +2 lives uses traced original heart outline.\n',encoding='utf8')
+    (out/'README.txt').write_text('AXBM v1: six original-inspired low-poly bonus meshes, local x/y frontal plane.\nTexture: textures/BONUSX.tga 256x384 RGBA.\nNo commercial model data. +2 lives uses traced original heart outline.\n',encoding='utf8')
     print('bonus mesh generated:',len(data),'bytes')
 if __name__=='__main__':
     import sys

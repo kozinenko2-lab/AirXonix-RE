@@ -187,16 +187,20 @@ bool Renderer::initProgram(){
         "void main(){vec2 uv=aUv+uUvOffset;if(uUvFlip>0.5)uv.y=1.0-uv.y;vUv=uv;vLight=aLight;vColor=aColor;gl_Position=aPos;}";
     static const char* fs=
         "precision mediump float;varying vec2 vUv;varying float vLight;varying vec4 vColor;"
-        "uniform sampler2D uTexture;uniform float uUseTexture;uniform float uBrightness;uniform vec3 uTint;uniform float uAlphaTest;"
+        "uniform sampler2D uTexture;uniform float uUseTexture;uniform float uBrightness;uniform vec3 uTint;uniform float uAlphaTest;uniform float uGraphicsMode;"
         "void main(){vec4 tex=texture2D(uTexture,vUv);"
         "if(uUseTexture>0.5 && uAlphaTest>0.5 && tex.a<0.5) discard;"
         "vec4 base=mix(vec4(1.0),tex,uUseTexture);"
-        "gl_FragColor=vec4(base.rgb*vColor.rgb*vLight*uBrightness*uTint,base.a*vColor.a);}";
+        "float light=vLight;"
+        "if(uGraphicsMode>2.5)light=floor(clamp(light,0.0,1.0)*3.0+0.5)/3.0;"
+        "vec3 rgb=base.rgb*vColor.rgb*light*uBrightness*uTint;"
+        "if(uGraphicsMode>1.5&&uGraphicsMode<2.5){float g=dot(rgb,vec3(0.299,0.587,0.114));rgb=clamp(mix(vec3(g),rgb,1.15)*1.06,0.0,1.0);}"
+        "gl_FragColor=vec4(rgb,base.a*vColor.a);}";
     GLuint v=shader(GL_VERTEX_SHADER,vs),f=shader(GL_FRAGMENT_SHADER,fs);if(!v||!f)return false;
     program_=glCreateProgram();glAttachShader(program_,v);glAttachShader(program_,f);
     glBindAttribLocation(program_,0,"aPos");glBindAttribLocation(program_,1,"aUv");glBindAttribLocation(program_,2,"aLight");glBindAttribLocation(program_,3,"aColor");
     glLinkProgram(program_);glDeleteShader(v);glDeleteShader(f);GLint ok=0;glGetProgramiv(program_,GL_LINK_STATUS,&ok);if(!ok)return false;
-    aPos_=0;aUv_=1;aLight_=2;aColor_=3;uBrightness_=glGetUniformLocation(program_,"uBrightness");uTint_=glGetUniformLocation(program_,"uTint");uUseTexture_=glGetUniformLocation(program_,"uUseTexture");uTexture_=glGetUniformLocation(program_,"uTexture");uUvFlip_=glGetUniformLocation(program_,"uUvFlip");uUvOffset_=glGetUniformLocation(program_,"uUvOffset");uAlphaTest_=glGetUniformLocation(program_,"uAlphaTest");
+    aPos_=0;aUv_=1;aLight_=2;aColor_=3;uBrightness_=glGetUniformLocation(program_,"uBrightness");uTint_=glGetUniformLocation(program_,"uTint");uUseTexture_=glGetUniformLocation(program_,"uUseTexture");uTexture_=glGetUniformLocation(program_,"uTexture");uUvFlip_=glGetUniformLocation(program_,"uUvFlip");uUvOffset_=glGetUniformLocation(program_,"uUvOffset");uAlphaTest_=glGetUniformLocation(program_,"uAlphaTest");uGraphicsMode_=glGetUniformLocation(program_,"uGraphicsMode");
     glGenBuffers(1,&vbo_);glGenBuffers(1,&ibo_);return true;
 }
 
@@ -644,8 +648,8 @@ void Renderer::spawnPickupSmash(const PickupSmashEvent& event){
 
 void Renderer::rebuildLegacyModelBatch(const Game& game){
     using namespace LegacyScreenPipeline;
-    bonusVertices_.clear();bonusIndices_.clear();modelVertices_.clear();modelIndices_.clear();xonixVertices_.clear();xonixIndices_.clear();directionalGlintVertices_.clear();directionalGlintIndices_.clear();shadowVertices_.clear();shadowIndices_.clear();reflectionVertices_.clear();reflectionIndices_.clear();particleVertices_.clear();particleIndices_.clear();auxiliaryVertices_.clear();auxiliaryIndices_.clear();deathOverlayVertices_.clear();deathOverlayIndices_.clear();crawlerPass1Vertices_.clear();crawlerPass1Indices_.clear();crawlerPass2Vertices_.clear();crawlerPass2Indices_.clear();interLevelCinematicVertices_.clear();interLevelCinematicIndices_.clear();levelIntroPlaqueVertices_.clear();levelIntroPlaqueIndices_.clear();levelIntroDigitsVertices_.clear();levelIntroDigitsIndices_.clear();
-    OutputBatch bonusBatch;
+    bonusVertices_.clear();bonusIndices_.clear();airEnemyVertices_.clear();airEnemyIndices_.clear();modelVertices_.clear();modelIndices_.clear();xonixVertices_.clear();xonixIndices_.clear();directionalGlintVertices_.clear();directionalGlintIndices_.clear();shadowVertices_.clear();shadowIndices_.clear();reflectionVertices_.clear();reflectionIndices_.clear();particleVertices_.clear();particleIndices_.clear();auxiliaryVertices_.clear();auxiliaryIndices_.clear();deathOverlayVertices_.clear();deathOverlayIndices_.clear();crawlerPass1Vertices_.clear();crawlerPass1Indices_.clear();crawlerPass2Vertices_.clear();crawlerPass2Indices_.clear();interLevelCinematicVertices_.clear();interLevelCinematicIndices_.clear();levelIntroPlaqueVertices_.clear();levelIntroPlaqueIndices_.clear();levelIntroDigitsVertices_.clear();levelIntroDigitsIndices_.clear();
+    OutputBatch bonusBatch,airEnemyBatch;
     OutputBatch batch;batch.vertices.reserve(8192);batch.indices.reserve(16384);
     OutputBatch shadowBatch;shadowBatch.vertices.reserve(1024);shadowBatch.indices.reserve(2048);
     OutputBatch reflectionBatch;reflectionBatch.vertices.reserve(4096);reflectionBatch.indices.reserve(8192);
@@ -967,7 +971,7 @@ void Renderer::rebuildLegacyModelBatch(const Game& game){
         LegacyTransform::rotateY(m,-e.heading2048);
         LegacyTransform::rotateZ(m,e.angularAccumulator);
         LegacyTransform::rotateY(m,e.heading2048);
-        appendLegacyMesh(airEnemyModels_[std::size_t(std::clamp(e.subtype,0,3))],m,ex,LegacyModels::AirEnemySubmitY,ez,camera,projection,batch);
+        appendLegacyMesh(airEnemyModels_[std::size_t(std::clamp(e.subtype,0,3))],m,ex,LegacyModels::AirEnemySubmitY,ez,camera,projection,airEnemyBatch);
     }
     for(const auto& e:game.entities().ground()){
         // r348 DIRECT EXE 0x418840/0x418A90 -> 0x41ECC0: these are two
@@ -1103,6 +1107,8 @@ void Renderer::rebuildLegacyModelBatch(const Game& game){
     }
     for(const auto& v:bonusBatch.vertices)bonusVertices_.push_back({v.clipX,v.clipY,v.clipZ,v.clipW,v.u,v.v,v.light,v.r,v.g,v.b,v.a});
     bonusIndices_=std::move(bonusBatch.indices);
+    for(const auto& v:airEnemyBatch.vertices)airEnemyVertices_.push_back({v.clipX,v.clipY,v.clipZ,v.clipW,v.u,v.v,v.light,v.r,v.g,v.b,v.a});
+    airEnemyIndices_=std::move(airEnemyBatch.indices);
 
     reflectionVertices_.reserve(reflectionBatch.vertices.size());
     for(const auto& v:reflectionBatch.vertices)reflectionVertices_.push_back({v.clipX,v.clipY,v.clipZ,v.clipW,v.u,v.v,v.light,v.r,v.g,v.b,v.a});
@@ -1244,7 +1250,7 @@ void Renderer::rebuildMainMenuDecorationBatch(const Game& game,bool mainMenuCall
     OutputBatch logoBatch,laxyBatch;
     LegacyTransform::Matrix34 lm=LegacyTransform::identity();
     LegacyTransform::rotateXRad(lm,1.5707963267948966f);
-    LegacyTransform::rotateYRad(lm,LegacyMainMenuDecorationTrace::logoYaw(ts));
+    LegacyTransform::rotateYRad(lm,LegacyMainMenuDecorationTrace::logoYaw(ts)+1.5707963267948966f); // native logo orientation: +90deg clockwise Y
     LegacyTransform::setScale(lm,LegacyMainMenuDecorationTrace::logoScale(ts));
     appendLegacyMesh(menuLogoModel_.logo,lm,
                      LegacyMainMenuDecorationTrace::logoTranslateX(ts),
@@ -1552,7 +1558,7 @@ void Renderer::rebuildHudBatch(const Game& game){
     state.settingsNewBonuses=game.settings().newBonuses;state.settingsSelected=game.settings().selected;state.settingsBrightness=game.settings().brightness;state.settingsScale=game.settings().scale;
     state.settingsSpeed=game.settings().speed;state.settingsSfx=game.settings().sfx;state.settingsMusic=game.settings().music;state.settingsSpeech=game.settings().speech;
     state.settingsSelectorOffset=game.settings().selectorOffset;state.settingsFadeScale=LegacySettingsTrace::modelLightScale(game.settings().fadeCounter);
-    state.testInitialLives=game.settings().testInitialLives;state.testInitialTimeSeconds=game.settings().testInitialTimeSeconds;
+    state.testInitialLives=game.settings().testInitialLives;state.testInitialTimeSeconds=game.settings().testInitialTimeSeconds;state.graphicsMode=game.settings().graphicsMode;
     state.recordsMode=static_cast<int>(game.records().mode);
     if(game.records().mode<game.database().modes().size())
         state.recordsModeName=game.database().modes()[game.records().mode].name;
@@ -2026,6 +2032,17 @@ void Renderer::rebuildInformationDecorationBatch(Game& game){
 void Renderer::drawBatch(const std::vector<ScreenVertex>& vertices,const std::vector<std::uint16_t>& indices,GLuint texture,bool diagnosticModelUv,bool alphaTest){
     if(vertices.empty()||indices.empty()) return;
     glBindTexture(GL_TEXTURE_2D,texture);
+    if(texture){
+        const int sharp=activeGraphicsMode_==1?1:0;
+        auto found=textureFilterCache_.find(texture);
+        if(found==textureFilterCache_.end() || found->second!=sharp){
+            const GLenum filter=sharp?GL_NEAREST:GL_LINEAR;
+            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,filter);
+            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,filter);
+            textureFilterCache_[texture]=sharp;
+        }
+    }
+    if(uGraphicsMode_>=0)glUniform1f(uGraphicsMode_,float(activeGraphicsMode_));
     glUniform1f(uUseTexture_,texture?1.f:0.f);
     if(uAlphaTest_>=0) glUniform1f(uAlphaTest_,alphaTest?1.f:0.f);
     const bool applyUv=diagnosticModelUv && textureLabActive_;
@@ -2425,6 +2442,7 @@ void Renderer::drawGame(Game& game){
     rebuildLegacyModelBatch(game);
     rebuildHudBatch(game);
     glUseProgram(program_);
+    activeGraphicsMode_=game.settings().graphicsMode;
     glUniform1f(uBrightness_,std::clamp(game.brightnessScale()*game.presentationLightScale(),0.f,1.f));
     float tintR=1.f,tintG=1.f,tintB=1.f;
     if(game.paused()){
@@ -2510,6 +2528,12 @@ void Renderer::drawGame(Game& game){
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LEQUAL);
     drawBatch(shadowVertices_,shadowIndices_,env[LegacyFieldRenderState::ShadowTextureSlot]);
+    // Airborne enemies already erode the safe field during 0x41D4D0/0x41CEA0.
+    // Their opening pass must not be hidden by the old GL depth contents;
+    // draw them before Xonix so its foreground geometry still occludes balls.
+    if(game.levelIntroActive()||game.levelEntryActive())glDepthFunc(GL_ALWAYS);
+    drawBatch(airEnemyVertices_,airEnemyIndices_,atlas3_,true,kLegacyColorKeyDiscard);
+    glDepthFunc(GL_LEQUAL);
     drawBatch(xonixVertices_,xonixIndices_,atlas3_,true,kLegacyColorKeyDiscard);
     drawBatch(modelVertices_,modelIndices_,atlas3_,true,kLegacyColorKeyDiscard);
     if(bonusAtlas_)drawBatch(bonusVertices_,bonusIndices_,bonusAtlas_,true,true);
@@ -2574,6 +2598,7 @@ void Renderer::drawGame(Game& game){
     glDisable(GL_DEPTH_TEST);
     glUniform1f(uBrightness_,1.f);
     glUniform3f(uTint_,1.f,1.f,1.f);
+    activeGraphicsMode_=0; // never shade or sharpen HUD / menu text
     drawBatch(hud3Vertices_,hud3Indices_,atlas3_);
     drawBatch(hud4Vertices_,hud4Indices_,atlas4_);
     drawBatch(hud7Vertices_,hud7Indices_,atlas7_);

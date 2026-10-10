@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include "legacy_mesh.hpp"
 #include "legacy_model_factory.hpp"
 #include "core/legacy_original_resources.hpp"
@@ -61,7 +62,9 @@ private:
     GLuint program_=0,vbo_=0,ibo_=0,atlas3_=0,bonusAtlas_=0,atlas4_=0,atlas4Game_=0,atlas7_=0,menuAtlasM1_=0,menuAtlasMP_=0,menuAtlas3M1_=0,menuAtlas3M2_=0,menuAtlasM2_=0,font5_=0,menuLogo_=0,menuLaxy_=0,reflectionTexture_=0;
     std::array<std::array<GLuint,3>,12> environmentTextures_{}; // exact 12 gameplay themes x logical slots 0/1/2
     std::array<std::array<GLuint,2>,8> menuEnvironmentTextures_{}; // all exact M1/M2 least-used theme pairs
-    GLint aPos_=-1,aUv_=-1,aLight_=-1,aColor_=-1,uBrightness_=-1,uTint_=-1,uUseTexture_=-1,uTexture_=-1,uUvFlip_=-1,uUvOffset_=-1,uAlphaTest_=-1;
+    GLint aPos_=-1,aUv_=-1,aLight_=-1,aColor_=-1,uBrightness_=-1,uTint_=-1,uUseTexture_=-1,uTexture_=-1,uUvFlip_=-1,uUvOffset_=-1,uAlphaTest_=-1,uGraphicsMode_=-1;
+    int activeGraphicsMode_=0;
+    std::unordered_map<GLuint,int> textureFilterCache_;
     std::vector<Vertex> vertices_;
     std::vector<WorldTexVertex> floorWorldVertices_,wallWorldVertices_,frontLogoWorldVertices_;
     std::vector<ScreenVertex> screenVertices_,safeScreenVertices_,floorScreenVertices_,lowEdgeScreenVertices_,wallScreenVertices_,frontLogoScreenVertices_,backgroundVertices_,legacyFrameVertices_;
@@ -70,11 +73,11 @@ private:
     std::vector<std::uint16_t> screenIndices_,safeScreenIndices_,floorScreenIndices_,lowEdgeScreenIndices_,wallScreenIndices_,frontLogoScreenIndices_,backgroundIndices_,legacyFrameIndices_;
     std::vector<std::uint16_t> menuBg0Indices_,menuBg1Indices_,menuLogoIndices_,menuLaxyIndices_,menuItemIndices_,menuDecorationIndices_,menuDecorationTexture7Indices_,menuDecorationReflectionIndices_,menuSelectorIndices_;
     std::vector<std::uint16_t> modeSelectSlot0Indices_,modeSelectDecorationIndices_,modeSelectReflectionIndices_;
-    std::vector<ScreenVertex> modelVertices_,xonixVertices_,directionalGlintVertices_,shadowVertices_,reflectionVertices_,particleVertices_,auxiliaryVertices_,deathOverlayVertices_;
+    std::vector<ScreenVertex> airEnemyVertices_,modelVertices_,xonixVertices_,directionalGlintVertices_,shadowVertices_,reflectionVertices_,particleVertices_,auxiliaryVertices_,deathOverlayVertices_;
     std::vector<ScreenVertex> crawlerPass1Vertices_,crawlerPass2Vertices_;
     std::vector<ScreenVertex> interLevelCinematicVertices_;
     std::vector<ScreenVertex> levelIntroPlaqueVertices_,levelIntroDigitsVertices_;
-    std::vector<std::uint16_t> modelIndices_,xonixIndices_,directionalGlintIndices_,shadowIndices_,reflectionIndices_,particleIndices_,auxiliaryIndices_,deathOverlayIndices_;
+    std::vector<std::uint16_t> airEnemyIndices_,modelIndices_,xonixIndices_,directionalGlintIndices_,shadowIndices_,reflectionIndices_,particleIndices_,auxiliaryIndices_,deathOverlayIndices_;
     std::vector<std::uint16_t> crawlerPass1Indices_,crawlerPass2Indices_;
     std::vector<std::uint16_t> interLevelCinematicIndices_;
     std::vector<std::uint16_t> levelIntroPlaqueIndices_,levelIntroDigitsIndices_;
@@ -95,7 +98,7 @@ private:
     std::array<LegacyMesh,4> airEnemyModels_{};
     LegacyMesh airEnemyShadowModel_{};
     std::array<LegacyMesh,6> pickupModels_{};
-    std::array<LegacyMesh,5> bonusModels_{};
+    std::array<LegacyMesh,6> bonusModels_{};
     std::vector<ScreenVertex> bonusVertices_;
     std::vector<std::uint16_t> bonusIndices_;
     std::array<LegacyMesh,6> auxiliaryModels_{};

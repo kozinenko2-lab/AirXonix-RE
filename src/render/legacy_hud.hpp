@@ -55,12 +55,13 @@ struct LegacyHudState {
     int informationFadeCounter=0x7c0;
     int informationPromptPhase=0;
     int settingsSelected=0;
-    std::array<float,9> settingsBrightness{{1.f,1.f,1.f,1.f,1.f,1.f,1.f,1.f,1.f}};
-    std::array<float,9> settingsScale{{1.f,1.f,1.f,1.f,1.f,1.f,1.f,1.f,1.f}};
+    std::array<float,10> settingsBrightness{{1.f,1.f,1.f,1.f,1.f,1.f,1.f,1.f,1.f}};
+    std::array<float,10> settingsScale{{1.f,1.f,1.f,1.f,1.f,1.f,1.f,1.f,1.f}};
     float settingsSpeed=800.f,settingsSfx=1000.f,settingsMusic=800.f;
     float settingsSelectorOffset=0.f;
     float settingsFadeScale=1.f;
     int testInitialLives=3,testInitialTimeSeconds=60;
+    int graphicsMode=0;
     bool settingsSpeech=true;
     bool settingsNewBonuses=false;
     std::array<int,4> controlsBindings{{0x41,0x5A,0x58,0x43}};

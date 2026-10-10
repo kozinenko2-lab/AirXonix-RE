@@ -340,14 +340,17 @@ std::vector<LegacyHudSprite> compose(const LegacyHudState& s){
         };
         addInitialSetting(256,2,s.settingsSelected==6);
         addInitialSetting(320,34,s.settingsSelected==7);
+        addInitialSetting(384,66,s.settingsSelected==9);
         char testLine[48];
         std::snprintf(testLine,sizeof(testLine),"%02d",s.testInitialLives);
         fontText(out,testLine,34,0,s.settingsSelected==6?0xffd969u:0xffffffu);
         std::snprintf(testLine,sizeof(testLine),"%03d",s.testInitialTimeSeconds);
         fontText(out,testLine,34,1,s.settingsSelected==7?0xffd969u:0xffffffu);
         // Native third row: original six 3D menu rows remain untouched.
-        fontText(out,"\xCD\xCE\xC2\xDB\xC5\x20\xC1\xCE\xCD\xD3\xD1\xDB",20,2,s.settingsSelected==8?0xffd969u:0xaaaaffu);
-        fontText(out,s.settingsNewBonuses?"\xC4\xC0":"\xCD\xC5\xD2",35,2,s.settingsSelected==8?0xffd969u:0xffffffu);
+        fontText(out,"\xCD\xCE\xC2\xDB\xC5\x20\xC1\xCE\xCD\xD3\xD1\xDB",20,4,s.settingsSelected==8?0xffd969u:0xaaaaffu);
+        fontText(out,s.settingsNewBonuses?"\xC4\xC0":"\xCD\xC5\xD2",35,4,s.settingsSelected==8?0xffd969u:0xffffffu);
+        static constexpr const char* modes[4]={"ORIGINAL","SHARP","ENHANCED","TOON"};
+        fontText(out,modes[std::clamp(s.graphicsMode,0,3)],31,2,s.settingsSelected==9?0xffd969u:0xffffffu);
     }else if(s.screen==LegacyHudScreen::Controls){
         // r155 DIRECT EXE: 0x410E3A..0x411254 writes a 40x15 text grid and
         // renders it with fnt4 in logical texture slot 5. Byte strings below

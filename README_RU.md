@@ -113,3 +113,7 @@ Launcher `portmaster/AirXonix.sh` ищет игру в типичных путя
 - Исправлена reset/lifetime-семантика Homing/Eraser и последовательная инициализация pickup: сохранены нативные поля между level reset и история координат прошлых pickup, устранены sentinel-координаты.
 - Дополнительно закреплены контракты cached world/heading летающих врагов, lifetime полевого debris и slot-логика pickup smash.
 - Текущий автономный прогон: **241/241 PASS**; `REVERSE_CLOSURE_AUDIT PASS`; `portmaster/AirXonix.sh` проходит `bash -n`.
+
+## r389 — графика и бонус Магнит
+
+См. [описание r389](R389-CHANGES-RU.md) и [режимы OpenGL ES2](docs/GRAPHICS_OPTIONS_RU.md). В PortMaster: Настройки → Графика (ORIGINAL/SHARP/ENHANCED/TOON) и Новые бонусы (ДА/НЕТ).

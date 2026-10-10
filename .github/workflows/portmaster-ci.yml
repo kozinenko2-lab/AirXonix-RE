@@ -16,9 +16,17 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build g++ libsdl2-dev libgles2-mesa-dev libpng-dev
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Generate self-contained clean-room assets
+        run: |
+          python3 -m pip install numpy pillow
+          python3 tools/generate_cleanroom_resources.py assets
+          cp AirXonix-cleanroom.zip ../AirXonix-cleanroom.zip
       - name: Configure native runtime and tests
         run: cmake -S . -B build-ci -G Ninja -DAIRXONIX_BUILD_RUNTIME=ON -DAIRXONIX_BUILD_TESTS=ON -DAIRXONIX_RESOURCE_FREE=ON
       - name: Compile game and LAN/menu tests (host architecture)
-        run: cmake --build build-ci --target airxonix test_discovery_r386 test_multiplayer_menu_r386 -j2
+        run: cmake --build build-ci --target airxonix test_discovery_r386 test_multiplayer_menu_r386 test_bonus_extensions_r388 test_magnet_graphics_r389 -j2
       - name: LAN discovery and menu regressions
-        run: ctest --test-dir build-ci --output-on-failure -R '^(discovery_r386|multiplayer_menu_r386)$'
+        run: ctest --test-dir build-ci --output-on-failure -R '^(discovery_r386|multiplayer_menu_r386|bonus_extensions_r388|magnet_graphics_r389)$'

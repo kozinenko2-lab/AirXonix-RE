@@ -25,3 +25,7 @@ Both branches contain full source trees, platform build instructions, test suite
 The Git history excludes the original commercial game's binary, audio, textures and resource packages, private Android signing keys, downloaded SDKs, compiled APKs/ELFs, and generated clean-room ZIPs. Generated replacement assets can be recreated locally with the included scripts.
 
 **A project-wide source-code license has not yet been chosen.** Publishing code on GitHub does not by itself grant permission to reuse, relicense, or redistribute it; review provenance and choose a license before accepting external contributions. Trademarks and original copyrighted material remain with their respective owners.
+
+## Original team and dedication
+
+Please read [Original game credits (English)](CREDITS.md) and [Авторы и благодарности (русский)](CREDITS_RU.md). We gratefully acknowledge the original AirXonix creators and respectfully commemorate Vladimir Savin. The optional GLES2 visual-style roadmap and new metallic menu assets are maintained in the [`portmaster` branch](https://github.com/kozinenko2-lab/AirXonix-RE/tree/portmaster).

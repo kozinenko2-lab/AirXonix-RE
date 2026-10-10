@@ -1,31 +1,27 @@
 # AirXonix RE
 
-Reverse-engineered native AirXonix implementation and platform ports maintained as separate branches.
+Native AirXonix reverse-engineering project and maintained ports.
 
-> **Project status:** Experimental community reimplementation; hardware-dependent features must be tested on target devices. This repository is not affiliated with the original developers.
+> **Status:** Experimental reimplementation. Anbernic H700 and Android hardware behavior is not guaranteed by compilation alone. This project is not affiliated with the original game's developers.
 
-## Choose a branch
+## Branches
 
-| Branch | Target | Snapshot | Key features |
-| --- | --- | --- | --- |
-| [`portmaster`](../../tree/portmaster) | Anbernic RG40XX H, H700 Linux / PortMaster, ARMHF, SDL2 and OpenGL ES2 | r386 | Cleanroom resource generator, native renderer, local Wi-Fi two-player coop, in-game Host/Join menu and LAN discovery |
-| [`android`](../../tree/android) | Android (ARM64), SDL2 / OpenGL ES | r373 | Android Studio / Gradle project, touchscreen and virtual controller support |
+| Branch | Platform | Version |
+| --- | --- | --- |
+| [**portmaster**](https://github.com/kozinenko2-lab/AirXonix-RE/tree/portmaster) | Anbernic RG40XX H / Allwinner H700 Linux; ARMHF, SDL2, OpenGL ES2, PortMaster | **r386** |
+| [**android**](https://github.com/kozinenko2-lab/AirXonix-RE/tree/android) | Android ARM64, SDL2, OpenGL ES2, touch and controller support | **r373** |
 
-The implementations share an AirXonix native game core but **are not automatically identical**: PortMaster r386 and Android r373 are different development snapshots. Changes should be ported between branches deliberately, built, and regression-tested.
+Both branches contain full source trees, platform build instructions, test suites, and clean-room resource generation. The two ports have independent development histories; PortMaster multiplayer r386 is **not** an Android multiplayer implementation.
 
-## Build and source
+## Getting started
 
-- [PortMaster instructions](../../blob/portmaster/README_MULTIPLAYER_RU.md) (Russian) and [English](../../blob/portmaster/README_MULTIPLAYER_EN.md)
-- [Android instructions](../../blob/android/README_ANDROID_RU.md) (Russian) and [English](../../blob/android/README_ANDROID_EN.md)
-- Clean-room asset generation lives in the PortMaster [`tools/`](../../tree/portmaster/tools) directory. The generated archive is intentionally not versioned in Git.
-- Tests and internal engineering notes are provided in each branch.
+- [PortMaster installation and build notes](https://github.com/kozinenko2-lab/AirXonix-RE/blob/portmaster/README.md)
+- [Android build notes](https://github.com/kozinenko2-lab/AirXonix-RE/blob/android/README.md)
+- [Contribution guide](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
 
-## Copyright, source provenance, and licenses
+## Distribution and license status
 
-The repository contains code from our native reverse-engineering effort and public-source builds. Original commercial game files, proprietary audio/textures, private signing keys, SDKs/toolchains, compiled APKs, generated archives, and personal data are **not** committed.
+The Git history excludes the original commercial game's binary, audio, textures and resource packages, private Android signing keys, downloaded SDKs, compiled APKs/ELFs, and generated clean-room ZIPs. Generated replacement assets can be recreated locally with the included scripts.
 
-No license grant for original proprietary AirXonix game assets is implied. A project-wide open-source license has not been selected yet; until it is explicitly selected, do not assume permission to redistribute or relicense code. The original game's trademarks belong to their respective owners.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). Keep platform-specific changes on the appropriate branch, use small PRs, and attach build logs and applicable tests.
+**A project-wide source-code license has not yet been chosen.** Publishing code on GitHub does not by itself grant permission to reuse, relicense, or redistribute it; review provenance and choose a license before accepting external contributions. Trademarks and original copyrighted material remain with their respective owners.

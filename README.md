@@ -1,31 +1,37 @@
-# AirXonix RE
+# AirXonix RE — PortMaster / Anbernic H700 (r386)
 
-Reverse-engineered native AirXonix implementation and platform ports maintained as separate branches.
+A reverse-engineered native game core for the Anbernic RG40XX H class of Linux handhelds, using **ARMHF**, **SDL2** and **OpenGL ES2**. This branch contains the complete public source snapshot, not a standalone executable release.
 
-> **Project status:** Experimental community reimplementation; hardware-dependent features must be tested on target devices. This repository is not affiliated with the original developers.
+## Highlights
 
-## Choose a branch
+- Original-style single-player gameplay, 3D presentation and input support.
+- Two-player cooperative **local Wi-Fi** mode: shared lives, timer and score, blue/red players and trails, replicated world and damage events.
+- **Multiplayer → Host / Join** inside the main game menu, using UDP discovery (27841) and TCP gameplay transport (27840 by default); no manual IP or second launcher.
+- One PortMaster launcher: [`portmaster/AirXonix.sh`](portmaster/AirXonix.sh).
+- Clean-room generated replacement assets through [`tools/generate_cleanroom_resources.py`](tools/generate_cleanroom_resources.py), including the new menu graphics.
+- Extensive source-based regression tests in [`tests/`](tests/).
 
-| Branch | Target | Snapshot | Key features |
-| --- | --- | --- | --- |
-| [`portmaster`](../../tree/portmaster) | Anbernic RG40XX H, H700 Linux / PortMaster, ARMHF, SDL2 and OpenGL ES2 | r386 | Cleanroom resource generator, native renderer, local Wi-Fi two-player coop, in-game Host/Join menu and LAN discovery |
-| [`android`](../../tree/android) | Android (ARM64), SDL2 / OpenGL ES | r373 | Android Studio / Gradle project, touchscreen and virtual controller support |
+## Build
 
-The implementations share an AirXonix native game core but **are not automatically identical**: PortMaster r386 and Android r373 are different development snapshots. Changes should be ported between branches deliberately, built, and regression-tested.
+An ARMHF cross toolchain, SDL2 headers/libraries and GLES2-capable target userspace are needed for the H700 release. See [`scripts/build_h700_armhf.sh`](scripts/build_h700_armhf.sh) for the expected SDK variables, as well as [`README_MULTIPLAYER_RU.md`](README_MULTIPLAYER_RU.md) / [`README_MULTIPLAYER_EN.md`](README_MULTIPLAYER_EN.md) for installation and network conditions.
 
-## Build and source
+For a host Linux source compilation and targeted regression checks (not a substitute for H700 testing):
 
-- [PortMaster instructions](../../blob/portmaster/README_MULTIPLAYER_RU.md) (Russian) and [English](../../blob/portmaster/README_MULTIPLAYER_EN.md)
-- [Android instructions](../../blob/android/README_ANDROID_RU.md) (Russian) and [English](../../blob/android/README_ANDROID_EN.md)
-- Clean-room asset generation lives in the PortMaster [`tools/`](../../tree/portmaster/tools) directory. The generated archive is intentionally not versioned in Git.
-- Tests and internal engineering notes are provided in each branch.
+```bash
+sudo apt-get install cmake ninja-build g++ libsdl2-dev libgles2-mesa-dev libpng-dev
+cmake -S . -B build -G Ninja -DAIRXONIX_RESOURCE_FREE=ON -DAIRXONIX_BUILD_TESTS=ON
+cmake --build build --target airxonix test_discovery_r386 test_multiplayer_menu_r386 -j2
+ctest --test-dir build -R '^(discovery_r386|multiplayer_menu_r386)$' --output-on-failure
+```
 
-## Copyright, source provenance, and licenses
+Generate clean-room assets separately with Python dependencies NumPy and Pillow. The generated `AirXonix-cleanroom.zip` is deliberately excluded from Git; place it next to the ELF in the game's PortMaster directory when assembling a distribution.
 
-The repository contains code from our native reverse-engineering effort and public-source builds. Original commercial game files, proprietary audio/textures, private signing keys, SDKs/toolchains, compiled APKs, generated archives, and personal data are **not** committed.
+## Target installation
 
-No license grant for original proprietary AirXonix game assets is implied. A project-wide open-source license has not been selected yet; until it is explicitly selected, do not assume permission to redistribute or relicense code. The original game's trademarks belong to their respective owners.
+Use identical builds on both devices. One console selects **Host**, the other **Join**, on the same Wi-Fi LAN without client isolation. Both devices need firmware exposing the 32-bit ARMHF loader and functional GLES2. Hold **B + Select** to leave the session; log files are stored in the game folder (`AirXonix/logs/AirXonix.log`).
 
-## Contributing
+## Verification status
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Keep platform-specific changes on the appropriate branch, use small PRs, and attach build logs and applicable tests.
+Local compilation and selected automated LAN/UI tests were previously performed for r386. **Full playthrough and real two-console H700 Wi-Fi tests have not been verified.** See the r386 release notes for details.
+
+See the [Android branch](https://github.com/kozinenko2-lab/AirXonix-RE/tree/android) for an independent earlier Android r373 source snapshot. Do not merge the platform branches blindly.

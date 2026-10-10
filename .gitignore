@@ -1,36 +1,12 @@
-# Build output / IDE
-build/
-build-*/
-cmake-build-*/
+# Personal original commercial game resources: NEVER commit to public GitHub
+app/src/main/assets/AirXonix.wrp.exe
+app/src/main/assets/MUSIC/
+app/src/main/assets/AirXonix-cleanroom.zip
+app/build/
 .gradle/
-.idea/
-.vscode/
-*.o
-*.a
-*.so
-*.so.*
-*.elf
-*.exe
+.cxx/
+build/
+third_party/
+local.properties
 *.apk
 *.aab
-*.class
-*.log
-*.tmp
-*.swp
-*.dSYM/
-# Generated resources and local private assets
-AirXonix-cleanroom.zip
-assets/
-app/build/
-local.properties
-**/local.properties
-**/keystore.properties
-*.jks
-*.keystore
-*.p12
-*.pfx
-# Never commit original commercial game data
-BMPPACK
-MUSIC
-SOUNDINF
-*.wrp.exe

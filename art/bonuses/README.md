@@ -1,0 +1,1 @@
+Five authored low-poly meshes and generated 256x256 texture atlas. The generator (`tools/generate_bonus_models.py`) is the editable source of truth. These bytes are also embedded at models/ and textures/ in AirXonix-cleanroom.zip.

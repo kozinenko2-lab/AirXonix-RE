@@ -58,7 +58,7 @@ private:
     void drawBatch(const std::vector<ScreenVertex>& vertices,const std::vector<std::uint16_t>& indices,GLuint texture,bool diagnosticModelUv=false,bool alphaTest=true);
     void rebuildTextureLabBatch();
     void drawTextureLab();
-    GLuint program_=0,vbo_=0,ibo_=0,atlas3_=0,atlas4_=0,atlas4Game_=0,atlas7_=0,menuAtlasM1_=0,menuAtlasMP_=0,menuAtlas3M1_=0,menuAtlas3M2_=0,menuAtlasM2_=0,font5_=0,menuLogo_=0,menuLaxy_=0,reflectionTexture_=0;
+    GLuint program_=0,vbo_=0,ibo_=0,atlas3_=0,bonusAtlas_=0,atlas4_=0,atlas4Game_=0,atlas7_=0,menuAtlasM1_=0,menuAtlasMP_=0,menuAtlas3M1_=0,menuAtlas3M2_=0,menuAtlasM2_=0,font5_=0,menuLogo_=0,menuLaxy_=0,reflectionTexture_=0;
     std::array<std::array<GLuint,3>,12> environmentTextures_{}; // exact 12 gameplay themes x logical slots 0/1/2
     std::array<std::array<GLuint,2>,8> menuEnvironmentTextures_{}; // all exact M1/M2 least-used theme pairs
     GLint aPos_=-1,aUv_=-1,aLight_=-1,aColor_=-1,uBrightness_=-1,uTint_=-1,uUseTexture_=-1,uTexture_=-1,uUvFlip_=-1,uUvOffset_=-1,uAlphaTest_=-1;
@@ -95,6 +95,9 @@ private:
     std::array<LegacyMesh,4> airEnemyModels_{};
     LegacyMesh airEnemyShadowModel_{};
     std::array<LegacyMesh,6> pickupModels_{};
+    std::array<LegacyMesh,5> bonusModels_{};
+    std::vector<ScreenVertex> bonusVertices_;
+    std::vector<std::uint16_t> bonusIndices_;
     std::array<LegacyMesh,6> auxiliaryModels_{};
     LegacyMesh trailNormalModel_{};
     LegacyMesh trailDamagedModel_{};

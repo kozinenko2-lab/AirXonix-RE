@@ -1598,3 +1598,11 @@ if(AIRXONIX_BUILD_TESTS AND NOT ANDROID)
   target_link_libraries(test_lan_two_peers_rc PRIVATE airxonix_gamecore airxonix_legacy_mesh pthread)
   add_test(NAME lan_two_peers_rc COMMAND test_lan_two_peers_rc)
 endif()
+
+# r388: opt-in native power-ups, resource mesh/atlas and AXMP v8 regression.
+if(AIRXONIX_BUILD_TESTS AND NOT ANDROID)
+  add_executable(test_bonus_extensions_r388 tests/test_bonus_extensions_r388.cpp)
+  target_link_libraries(test_bonus_extensions_r388 PRIVATE airxonix_gamecore airxonix_legacy_mesh)
+  target_include_directories(test_bonus_extensions_r388 PRIVATE src)
+  add_test(NAME bonus_extensions_r388 COMMAND test_bonus_extensions_r388 "${CMAKE_CURRENT_SOURCE_DIR}/../AirXonix-cleanroom.zip")
+endif()

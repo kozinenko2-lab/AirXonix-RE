@@ -56,6 +56,9 @@ struct Snapshot {
     std::vector<GroundView> ground;
     std::array<PickupView,6> pickups{};
     std::int32_t pickupAngle=0;
+    Byte bonusEnabled=0,bonusKind=255;
+    float bonusX=.5f,bonusZ=.5f,bonusHeight=.08f;
+    std::int32_t bonusWait=0,shieldMs=0,freezeMs=0,scoreMs=0,tailMs=0;
     HomingView homing{};
     EraserView eraser{};
 };
@@ -102,6 +105,9 @@ inline std::vector<Byte> encodeSnapshot(const Snapshot& s){
     for(const auto& g:s.ground){w.f32(g.x);w.f32(g.y);w.f32(g.worldX);w.f32(g.worldZ);w.f32(g.delay);w.u8(g.active);}
     for(const auto& p:s.pickups){w.i32(p.timerMs);w.u16(std::uint16_t(p.gridX));w.u16(std::uint16_t(p.gridY));w.f32(p.worldX);w.f32(p.height);w.f32(p.worldZ);}
     w.i32(s.pickupAngle);
+    w.u8(s.bonusEnabled);w.u8(s.bonusKind);
+    w.f32(s.bonusX);w.f32(s.bonusZ);w.f32(s.bonusHeight);
+    w.i32(s.bonusWait);w.i32(s.shieldMs);w.i32(s.freezeMs);w.i32(s.scoreMs);w.i32(s.tailMs);
     w.u8(s.homing.active);w.f32(s.homing.x);w.f32(s.homing.y);w.f32(s.homing.z);w.f32(s.homing.spin);
     w.u8(s.eraser.active);w.f32(s.eraser.x);w.f32(s.eraser.z);w.f32(s.eraser.spin);w.i32(s.eraser.angle);
     return std::move(w.data);
@@ -154,7 +160,16 @@ inline bool decodeSnapshot(const std::vector<Byte>& b,Snapshot& s){
            !std::isfinite(p.worldX)||!std::isfinite(p.height)||!std::isfinite(p.worldZ)||
            p.worldX<0.f||p.worldX>1.f||p.worldZ<0.f||p.worldZ>1.f||p.height< -.5f||p.height>1.f)return false;
     }
-    if(!r.i32(s.pickupAngle)||!r.u8(s.homing.active)||!r.f32(s.homing.x)||!r.f32(s.homing.y)||!r.f32(s.homing.z)||!r.f32(s.homing.spin)||
+    if(!r.i32(s.pickupAngle)||!r.u8(s.bonusEnabled)||!r.u8(s.bonusKind)||
+       !r.f32(s.bonusX)||!r.f32(s.bonusZ)||!r.f32(s.bonusHeight)||
+       !r.i32(s.bonusWait)||!r.i32(s.shieldMs)||!r.i32(s.freezeMs)||!r.i32(s.scoreMs)||!r.i32(s.tailMs)||
+       s.bonusEnabled>1||(s.bonusKind>=5&&s.bonusKind!=255)||
+       !std::isfinite(s.bonusX)||!std::isfinite(s.bonusZ)||!std::isfinite(s.bonusHeight)||
+       s.bonusX<0.f||s.bonusX>1.f||s.bonusZ<0.f||s.bonusZ>1.f||
+       s.bonusHeight<0.f||s.bonusHeight>0.1f||s.bonusWait<0||s.bonusWait>60000||
+       s.shieldMs<0||s.shieldMs>12000||s.freezeMs<0||s.freezeMs>6500||
+       s.scoreMs<0||s.scoreMs>15000||s.tailMs<0||s.tailMs>8000||
+       !r.u8(s.homing.active)||!r.f32(s.homing.x)||!r.f32(s.homing.y)||!r.f32(s.homing.z)||!r.f32(s.homing.spin)||
        !r.u8(s.eraser.active)||!r.f32(s.eraser.x)||!r.f32(s.eraser.z)||!r.f32(s.eraser.spin)||!r.i32(s.eraser.angle))return false;
     if(s.homing.active>1||s.eraser.active>1||
        !std::isfinite(s.homing.x)||!std::isfinite(s.homing.y)||!std::isfinite(s.homing.z)||!std::isfinite(s.homing.spin)||

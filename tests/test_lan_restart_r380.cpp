@@ -18,7 +18,7 @@ static int deaths(Game& g){
 }
 int main(){
     using namespace airxonix;
-    static_assert(coop::ProtocolVersion==7);
+    static_assert(coop::ProtocolVersion>=7);
     Game host,guest;host.startCoopSession();guest.startCoopSession();
     assert(guest.applyCoopSnapshot(host.makeCoopSnapshot(1)));
     assert(guest.coopSessionEpoch()==1 && guest.coopDeathSerial()==0);

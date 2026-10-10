@@ -62,6 +62,7 @@ void Game::showMainMenuOnBoot(){
 
 bool Game::initializeLegacySettings(const std::filesystem::path& path){
     settingsPath_=path;
+    { std::ifstream ext(path.string()+".bonuses.ini");int on=0; if(ext>>on)setNewBonusesEnabled(on==1); }
     struct RawSettings { float speed,sfx,music; std::int32_t reserved; std::int32_t keys[4]; std::int32_t speech; };
     static_assert(sizeof(RawSettings)==LegacySettingsTrace::fileSize);
     RawSettings raw{};
@@ -95,7 +96,10 @@ bool Game::saveLegacySettingsNow() const{
     std::ofstream f(settingsPath_,std::ios::binary|std::ios::trunc);
     if(!f)return false;
     f.write(reinterpret_cast<const char*>(&raw),sizeof(raw));
-    return bool(f);
+    if(!f)return false;
+    std::ofstream ext(settingsPath_.string()+".bonuses.ini",std::ios::trunc);
+    if(ext)ext<<(settings_.newBonuses?1:0)<<"\n";
+    return true;
 }
 
 bool Game::initializeLegacyHighScores(const std::filesystem::path& path){
@@ -190,6 +194,7 @@ void Game::loadLevel(std::size_t mode,std::size_t level){
     // 0x415440 (homing special) and 0x414DD0 (eraser special). Preserve this
     // ordering because all systems share the same MSVC rand() stream.
     pickups_.reset(field_,rng_,timer_);
+    bonuses_.reset(static_cast<std::uint32_t>(0xA3B6123u+unsigned(mode_)*131u+unsigned(level_)*997u));
     specialObjects_.reset(r,rng_);
 }
 
@@ -232,7 +237,7 @@ void Game::selectLevelMusic(){
 void Game::updateScoreAndPercent(){
     const int occupied=field_.occupiedMaskedCount();
     int delta=occupied-lastOccupied_;lastOccupied_=occupied;bonusAccumulator_=std::max(0,bonusAccumulator_+delta);
-    score_=std::max(0,static_cast<int>(static_cast<float>(score_)+static_cast<float>(delta)*scoreMultiplier_));
+    score_=std::max(0,static_cast<int>(static_cast<float>(score_)+static_cast<float>(delta)*scoreMultiplier_*(bonuses_.doubleScore()?2.f:1.f)));
     const int captured=std::max(0,occupied-initialOccupied_);
     capturePercent_=std::max(0,(captured*100)/captureDenominator_);
     // 0x419568..0x419597: the accumulated newly-captured-cell counter is
@@ -338,6 +343,18 @@ void Game::updateLegacyEffects(int dtMs){
     }else legacyCameraYawOffset_=0;
 }
 
+void Game::applyExtendedBonus(PickupEffect effect){
+    if(!bonuses_.enabled() || static_cast<int>(effect)<9){applyPickupEffect(effect);return;}
+    switch(effect){
+    case PickupEffect::Shield:bonuses_.grant(airxonix::bonus::Kind::Shield);break;
+    case PickupEffect::Freeze:bonuses_.grant(airxonix::bonus::Kind::Snowflake);break;
+    case PickupEffect::TwoLives:lives_=std::min(99,lives_+2);break;
+    case PickupEffect::DoubleScore:bonuses_.grant(airxonix::bonus::Kind::ScoreX2);break;
+    case PickupEffect::SafeTail:bonuses_.grant(airxonix::bonus::Kind::SafeTail);break;
+    default:break;
+    }
+}
+
 void Game::applyPickupEffect(PickupEffect effect){
     // 0x415726 applies a common visual kick for dispatcher ids >=5: global
     // brightness becomes 0.6 and recovers at 0.00018/ms. Individual branches
@@ -346,7 +363,7 @@ void Game::applyPickupEffect(PickupEffect effect){
     if(id>=5){brightnessScale_=0.6f;brightnessRecoveryRate_=0.00018f;}
 
     switch(effect){
-        case PickupEffect::Score1000: score_+=1000;break;
+        case PickupEffect::Score1000: score_+=bonuses_.doubleScore()?2000:1000;break;
         case PickupEffect::Time15000: timer_+=15000;break;
         case PickupEffect::ExtraLife: ++lives_;break;
         case PickupEffect::SlowEnemies: enemySpeedFactor_=0.3f;break;
@@ -355,6 +372,7 @@ void Game::applyPickupEffect(PickupEffect effect){
         case PickupEffect::CameraZoomIn: legacyCameraZoomRate_=0.0001f;break;
         case PickupEffect::Blackout: brightnessScale_=0.0f;break;
         case PickupEffect::CameraShake: legacyOscAmplitude_=120.0f;legacyOscPhase_=0.0f;legacyCameraYawOffset_=0;break;
+        default:break; // native effects are handled by applyExtendedBonus()
     }
 }
 
@@ -368,7 +386,21 @@ int Game::updatePickupRuntime(int dtMs,const PickupCollectorState& collector,boo
     }else{
         effects=pickups_.updateWithCollector(dtMs,field_,collector,entities_,rng_,timer_,lives_,allowPlayerCollection);
     }
-    for(PickupEffect e:effects)applyPickupEffect(e);
+    for(PickupEffect e:effects){
+        // Original slot #5 (?) already resolves to an original effect.
+        // Native option extends its result without changing the legacy roll.
+        applyExtendedBonus(e);
+    }
+    if(phase_==GamePhase::Gameplay && bonuses_.enabled()){
+        bonuses_.tickTimers(dtMs);
+        const auto& pos=bonuses_.state();
+        const float ox=pos.x,oy=pos.height,oz=pos.z;
+        const auto kind=bonuses_.advance(dtMs,collector,coopSecond);
+        if(kind!=airxonix::bonus::Kind::None){
+            applyExtendedBonus(static_cast<PickupEffect>(9+static_cast<int>(kind)));
+            queueDeathSpatialPlay(0x0Du,ox,oy,oz,1.f);
+        }
+    }
 
     for(const auto& ev:pickups_.consumeAudioEvents()){
         const auto tag=pickupVoiceTag(ev.slot);
@@ -725,7 +757,7 @@ void Game::updateDeathSequence(int dtMs){
     consumeEntityCollisionAudioEvents();
     effectEvents_.airErosionImpactEvents+=entities_.consumeAirErosionImpactEvents();
     effectEvents_.airErosionDebrisHelperCalls+=entities_.consumeAirErosionDebrisHelperCalls();
-    specialObjects_.update(dtMs,field_,player_,enemySpeedFactor_,rng_);
+    if(!bonuses_.frozen())specialObjects_.update(dtMs,field_,player_,enemySpeedFactor_,rng_);
     consumeSpecialPostUpdateEvents();
     updatePickupRuntime(dtMs,{deathScene_.worldX,deathScene_.worldY,deathScene_.worldZ});
     advanceLegacyBackgroundScroll(dtMs);
@@ -1646,7 +1678,7 @@ void Game::updateSettings(const InputState& input,int dtMs){
     const int dt=std::max(0,dtMs);
     // 0x4136E6..0x413704 updates the retained Settings test voice every loop.
     queueDeathSpatialUpdate(DeathAudioVoiceTag::SettingsVoice,0.f,0.f,settings_.selected==1?0.1f:5.f);
-    for(int i=0;i<8;++i){
+    for(int i=0;i<9;++i){
         const bool sel=i==settings_.selected;
         settings_.brightness[std::size_t(i)]=LegacyMainMenuRuntime::approach(
             settings_.brightness[std::size_t(i)],sel?1.f:0.6f,float(dt)*0.002f);
@@ -1755,6 +1787,16 @@ void Game::updateSettings(const InputState& input,int dtMs){
             }
         }
     }else{ settings_.testLrLatched=false; settings_.testRepeatMs=0; }
+    // A single native extension switch; ? automatically includes new bonuses.
+    if(settings_.selected==8){
+        const bool lr=input.left||input.right;
+        if(!lr)settings_.newBonusesLrLatched=false;
+        else if(!settings_.newBonusesLrLatched){
+            settings_.newBonusesLrLatched=true;
+            setNewBonusesEnabled(!settings_.newBonuses);
+            queueDeathSimple(0x16u);
+        }
+    }else settings_.newBonusesLrLatched=false;
 
     const bool nav=input.up||input.down||input.action||input.back;
     if(!nav){settings_.navLatched=false;return;}
@@ -1763,14 +1805,14 @@ void Game::updateSettings(const InputState& input,int dtMs){
     if(input.up){
         const int old=settings_.selected;
         // Above SPEED are TIME and LIVES. UP from SPEED reaches this mod panel.
-        settings_.selected=(old==0?7:(old==7?6:std::max(0,old-1)));
+        settings_.selected=(old==0?8:(old==8?7:(old==7?6:std::max(0,old-1))));
         if(settings_.selected!=old){queueDeathSimple(0x15u);advanceSelector();}
         return;
     }
     if(input.down){
         const int old=settings_.selected;
         // DOWN from LIVES -> TIME -> SPEED; EXIT remains the last original row.
-        settings_.selected=(old==6?7:(old==7?0:std::min(5,old+1)));
+        settings_.selected=(old==6?7:(old==7?8:(old==8?0:std::min(5,old+1))));
         if(settings_.selected!=old){queueDeathSimple(0x15u);advanceSelector();}
         return;
     }
@@ -1784,6 +1826,7 @@ void Game::updateSettings(const InputState& input,int dtMs){
         return;
     }
     if(input.action){
+        if(settings_.selected==8){setNewBonusesEnabled(!settings_.newBonuses);queueDeathSimple(0x16u);return;}
         if(settings_.selected==3){settings_.speech=!settings_.speech;speechEnabled_=settings_.speech;queueDeathSimple(0x16u);return;}
         if(settings_.selected==4){
             settings_.readyForInput=false;
@@ -2220,6 +2263,7 @@ void Game::update(const InputState& input,int dtMs){
     // crawler to spawn with delay 1.7, then sets the death flag.
     float crawlerHitX=0.f,crawlerHitZ=0.f;
     if(entities_.consumeCrawlerPlayerHit(player_.worldX(),player_.worldZ(),crawlerHitX,crawlerHitZ)){
+        if(bonuses_.absorbHit())return; // shield blocks fatal impact and death animation
         // 0x41C0FD..0x41C169: crawler-caused death starts the orange
         // 0x41BDB0 overlay at current Xonix X/Z, fixed Y=.025.
         startDeathOverlay(player_.worldX(),0.02500000037252903f,player_.worldZ(),255.f,50.f,0.f);
@@ -2235,6 +2279,7 @@ void Game::update(const InputState& input,int dtMs){
     // before the world-update routines, just like the crawler loop above.
     float homingHitX=0.f,homingHitY=0.f,homingHitZ=0.f;
     if(specialObjects_.consumeHomingPlayerHit(player_.worldX(),player_.worldZ(),homingHitX,homingHitY,homingHitZ)){
+        if(bonuses_.absorbHit())return;
         spawnDeathBurst(homingHitX,homingHitY,homingHitZ);
         const float dx=player_.worldX()-homingHitX,dz=player_.worldZ()-homingHitZ;
         const float d=std::sqrt(dx*dx+dz*dz);
@@ -2243,7 +2288,7 @@ void Game::update(const InputState& input,int dtMs){
     }
 
     resolveSpecialPreEntityContacts();
-    entities_.update(dtMs,field_,rng_,enemySpeedFactor_);
+    if(!bonuses_.frozen())entities_.update(dtMs,field_,rng_,enemySpeedFactor_);
     consumeEntityCollisionAudioEvents();
     // Ordinary airborne enemies have no matching 0x409140 direct-body
     // consumer in the traced gameplay loop. Their confirmed lethal route is
@@ -2259,13 +2304,14 @@ void Game::update(const InputState& input,int dtMs){
 
     {
         auto impacts=entities_.consumeTrailImpacts();
-        for(const auto& hit:impacts)player_.markTrailHazardNear(hit.x,hit.y);
+        if(!bonuses_.safeTail())for(const auto& hit:impacts)player_.markTrailHazardNear(hit.x,hit.y);
     }
     // 0x41A68D first marks a strict 3x3 area around the hazard center.
     // 0x41A6E5 then propagates hazard through adjacent trail records every
     // 17 ms; death is therefore chain/cadence driven, not immediate. The eraser keeps its
     // separately confirmed immediate Trail-bit death predicate.
-    if(player_.updateTrailHazard(dtMs) || specialObjects_.consumeTrailHit())player_.kill();
+    const bool trailHit=(bonuses_.safeTail()?false:player_.updateTrailHazard(dtMs)) || specialObjects_.consumeTrailHit();
+    if(trailHit && !bonuses_.safeTail() && !bonuses_.absorbHit())player_.kill();
     if(player_.dead()){handleDeath();return;}
     updateScoreAndPercent();
 

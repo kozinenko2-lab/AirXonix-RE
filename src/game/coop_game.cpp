@@ -216,7 +216,7 @@ void Game::updateCoop(const InputState& blue,const InputState& red,int dtMs){
     if(specialObjects_.consumeHomingPlayerHit(player_.worldX(),player_.worldZ(),hx,hy,hz))player_.kill();
     if(specialObjects_.consumeHomingPlayerHit(secondPlayer_.worldX(),secondPlayer_.worldZ(),hx,hy,hz))secondPlayer_.kill();
     resolveSpecialPreEntityContacts();
-    entities_.update(dtMs,field_,rng_,enemySpeedFactor_);
+    if(!bonuses_.frozen())entities_.update(dtMs,field_,rng_,enemySpeedFactor_);
     consumeEntityCollisionAudioEvents();
     effectEvents_.airErosionImpactEvents+=entities_.consumeAirErosionImpactEvents();
     effectEvents_.airErosionDebrisHelperCalls+=entities_.consumeAirErosionDebrisHelperCalls();
@@ -228,9 +228,9 @@ void Game::updateCoop(const InputState& blue,const InputState& red,int dtMs){
     const Player& target=redDist<blueDist?secondPlayer_:player_;
     const auto ownersBeforeSpecial=trailOwners_.cells();
     const auto fieldBeforeSpecial=field_.cells();
-    specialObjects_.update(dtMs,field_,target,enemySpeedFactor_,rng_);
+    if(!bonuses_.frozen())specialObjects_.update(dtMs,field_,target,enemySpeedFactor_,rng_);
     consumeSpecialPostUpdateEvents();
-    if(specialObjects_.consumeTrailHit()){
+    if(specialObjects_.consumeTrailHit() && !bonuses_.safeTail()){
         // The eraser removes trail cells directly. Attribute the old erased
         // cells to their owners before refreshing the map (may affect both).
         bool blueHit=false,redHit=false;
@@ -248,6 +248,7 @@ void Game::updateCoop(const InputState& blue,const InputState& red,int dtMs){
     advanceLegacyBackgroundScroll(dtMs);
     const auto impacts=entities_.consumeTrailImpacts();
     for(const auto& hit:impacts){
+        if(bonuses_.safeTail())continue;
         // Engine uses a strict 3x3 impact neighborhood. Mark both trails
         // if the enemy touches both owners in the same collision frame.
         if(player_.markTrailHazardNear(hit.x,hit.y))
@@ -259,8 +260,13 @@ void Game::updateCoop(const InputState& blue,const InputState& red,int dtMs){
     // Crawler collisions are attributed to the actual nearby player.
     if(entities_.consumeCrawlerPlayerHit(player_.worldX(),player_.worldZ(),hitX,hitZ))player_.kill();
     if(entities_.consumeCrawlerPlayerHit(secondPlayer_.worldX(),secondPlayer_.worldZ(),hitX,hitZ))secondPlayer_.kill();
-    if(player_.updateTrailHazard(dtMs))player_.kill();
-    if(secondPlayer_.updateTrailHazard(dtMs))secondPlayer_.kill();
+    const bool blueTrailHit=!bonuses_.safeTail()&&player_.updateTrailHazard(dtMs);
+    const bool redTrailHit=!bonuses_.safeTail()&&secondPlayer_.updateTrailHazard(dtMs);
+    if(!bonuses_.safeTail()){if(blueTrailHit)player_.kill();if(redTrailHit)secondPlayer_.kill();}
+    if((player_.dead()||secondPlayer_.dead())&&bonuses_.absorbHit()){
+        if(player_.dead())player_.coopSpawn(airxonix::coop::BlueSpawn.x,0);
+        else secondPlayer_.coopSpawn(airxonix::coop::RedSpawn.x,0);
+    }
     const std::uint8_t victims=(player_.dead()?1u:0u)|(secondPlayer_.dead()?2u:0u);
     if(victims)coopKillMask(victims,"body/trail");
     if(phase_!=GamePhase::Gameplay)return;
@@ -301,6 +307,10 @@ airxonix::lan::Snapshot Game::makeCoopSnapshot(std::uint32_t serial) const{
         s.pickups[i]={p.timerMs,std::int16_t(p.gridX),std::int16_t(p.gridY),p.worldX,p.height,p.worldZ};
     }
     s.pickupAngle=pickups_.presentationAngle2048();
+    const auto& b=bonuses_.state();
+    s.bonusEnabled=bonuses_.enabled()?1:0;s.bonusKind=static_cast<std::uint8_t>(b.kind);
+    s.bonusX=b.x;s.bonusZ=b.z;s.bonusHeight=b.height;s.bonusWait=b.waitMs;
+    s.shieldMs=b.shieldMs;s.freezeMs=b.freezeMs;s.scoreMs=b.scoreMs;s.tailMs=b.tailMs;
     const auto& h=specialObjects_.homing();
     s.homing={std::uint8_t(h.active),h.worldX,h.height,h.worldZ,h.spinPhase};
     const auto& e=specialObjects_.eraser();
@@ -396,6 +406,12 @@ bool Game::applyCoopSnapshot(const airxonix::lan::Snapshot& s){
         remotePickups[i]={p.timerMs,p.gridX,p.gridY,p.worldX,p.height,p.worldZ};
     }
     pickups_.networkView(remotePickups,s.pickupAngle);
+    airxonix::bonus::State bs{};
+    bs.kind=static_cast<airxonix::bonus::Kind>(s.bonusKind);
+    bs.x=s.bonusX;bs.z=s.bonusZ;bs.height=s.bonusHeight;bs.waitMs=s.bonusWait;
+    bs.shieldMs=s.shieldMs;bs.freezeMs=s.freezeMs;bs.scoreMs=s.scoreMs;bs.tailMs=s.tailMs;
+    bonuses_.networkState(s.bonusEnabled!=0,bs);
+    settings_.newBonuses=bonuses_.enabled();pickups_.setExtendedRandom(settings_.newBonuses);
     specialObjects_.networkPresentation(s.homing.active!=0,s.homing.x,s.homing.y,s.homing.z,s.homing.spin,
         s.eraser.active!=0,s.eraser.x,s.eraser.z,s.eraser.spin,s.eraser.angle);
     return true;

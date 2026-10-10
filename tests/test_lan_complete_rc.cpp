@@ -11,7 +11,7 @@ struct GameTestProbe {
   static void kill(Game& g,std::uint8_t mask){g.coopKillMask(mask,"coop-rc integration");}
 };
 int main(){
-  static_assert(coop::ProtocolVersion==7, "pause sync needs AXMP v7");
+  static_assert(coop::ProtocolVersion>=7, "pause sync needs AXMP v7");
   // Host-selected campaign mode survives a team Game Over and rematch.
   Game modeHost;
   modeHost.startCoopSession(4);

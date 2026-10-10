@@ -54,12 +54,14 @@ enum class PickupEffect : int {
     PlayerSlow=5,
     CameraZoomIn=6,
     Blackout=7,
-    CameraShake=8
+    CameraShake=8,
+    Shield=9,Freeze=10,TwoLives=11,DoubleScore=12,SafeTail=13
 };
 
 class Pickups {
 public:
     static constexpr std::size_t Count=6;
+    void setExtendedRandom(bool on){extendedRandom_=on;}
     void reset(const Field& field,LegacyRandom& rng,int levelTimerMs);
     // Returns effects granted to the player during this update. Enemy/special
     // destruction simply respawns the pickup and produces no event.
@@ -116,6 +118,8 @@ private:
     float targetHeight(const Pickup& p,const Field& field) const;
     static float sq(float v){return v*v;}
     std::array<Pickup,Count> items_{};
+    bool extendedRandom_=false;
+    std::uint32_t extensionRng_=0x51ab29c3u;
     int presentationAngle_=0;
     std::vector<PickupSmashEvent> smashEvents_;
     std::array<bool,Count> audioLoopActive_{};

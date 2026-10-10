@@ -22,7 +22,7 @@ static int countDeaths(Game& g){
 
 int main(){
     using namespace airxonix;
-    static_assert(coop::ProtocolVersion==7,"paired death requires v5");
+    static_assert(coop::ProtocolVersion>=7,"paired death requires v5");
     InputState idle{};
     for(int lives : {3,2,1}){
         Game host,guest;host.startCoopSession();guest.startCoopSession();

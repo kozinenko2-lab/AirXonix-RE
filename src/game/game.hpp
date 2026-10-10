@@ -14,6 +14,7 @@
 #include "field.hpp"
 #include "level.hpp"
 #include "pickups.hpp"
+#include "bonus_extensions.hpp"
 #include "player.hpp"
 #include "special_objects.hpp"
 #include "platform/input.hpp"
@@ -244,14 +245,16 @@ struct SettingsState {
     // r350: 0x413B67..0x413BFA visual selector/camera slide.
     float selectorOffset=0.f;
     bool speechLrLatched=false;
+    bool newBonusesLrLatched=false;
     bool testLrLatched=false;
     int testRepeatMs=0;
     // First six rows are original 0x413670 settings. Native rows 6/7
     // are placed ABOVE row 0 in D-Pad navigation and remain top-right on screen.
-    std::array<float,8> brightness{{1.f,1.f,1.f,1.f,1.f,1.f,1.f,1.f}};
-    std::array<float,8> scale{{1.f,1.f,1.f,1.f,1.f,1.f,1.f,1.f}};
+    std::array<float,9> brightness{{1.f,1.f,1.f,1.f,1.f,1.f,1.f,1.f,1.f}};
+    std::array<float,9> scale{{1.f,1.f,1.f,1.f,1.f,1.f,1.f,1.f,1.f}};
     int testInitialLives=3;
     int testInitialTimeSeconds=60;
+    bool newBonuses=false;
     std::size_t themeIndex=0;
     // 0x25B7888..0x25B7894: Right, Left, Backward, Forward.
     std::array<int,4> bindings{{0x41,0x5A,0x58,0x43}};
@@ -421,6 +424,9 @@ public:
     const Player& player() const{return player_;}
     const Entities& entities() const{return entities_;}
     const Pickups& pickups() const{return pickups_;}
+    const airxonix::bonus::Runtime& bonusExtensions() const{return bonuses_;}
+    void setNewBonusesEnabled(bool on){settings_.newBonuses=on;bonuses_.enable(on);pickups_.setExtendedRandom(on);}
+    void applyExtendedBonus(PickupEffect effect);
     const SpecialObjects& specialObjects() const{return specialObjects_;}
     int capturePercent() const{return capturePercent_;}
     int hudDisplayTimer() const{return hudDisplayTimer_;}
@@ -613,6 +619,7 @@ private:
 
     Entities entities_;
     Pickups pickups_;
+    airxonix::bonus::Runtime bonuses_{};
     std::vector<PickupSmashEvent> pickupSmashEvents_;
     std::vector<DeathAudioEvent> deathAudioEvents_;
     std::array<DeathBurstParticle,512> deathBurstParticles_{};

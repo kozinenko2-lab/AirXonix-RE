@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 SR=22050
-PACK_VERSION="r387"
+PACK_VERSION="r388"
 COUNTS=[7,15,20,20,20]
 STARTS=[0,7,22,42,62]
 MODE_NAMES=["ПРОСТАЯ","КЛАССИКА","МОДЕРН","ХАРД","ЭКСТРИМ"]
@@ -444,6 +444,8 @@ def main():
     build_atlas(tex,[("GOVE",0,0),("cmp2",0,48),("ABOR",0,96),("gam2",0,128),("RAM3",128,128),("CNT3",0,220)],atl/'atlas4_complete.tga')
     build_atlas(tex,[("IN2$",0,0),("IN2T",128,0),("IN2L",0,48),("IN2S",128,48),("IN2A",0,96),("TOU2",0,144),("LEV2",0,192)],atl/'atlas7_info.tga')
     build_atlas(tex,[("M101",0,0),("M102",0,42),("M103",0,84),("M104",0,126),("M105",0,168),("M106",0,210)],atl/'atlas4_menu_m1.tga')
+    from generate_bonus_models import generate as generate_bonus_models
+    generate_bonus_models(root)
     manifest=root/'cleanroom'/'MANIFEST.txt';manifest.parent.mkdir(parents=True,exist_ok=True)
     manifest.write_text("AirXonix Native clean-room resource pack %s\nGenerated assets only; no bytes copied from the commercial executable or its MUSIC/BMPPACK/SOUNDINF resources.\nTextures: %d TGA tiles + 5 reference atlases\nMetallic menu art and initial lives/time plates generated or authored for this project; no commercial menu textures.\nMusic: 10 synthesized raw U8 stereo 22050 Hz loops with click-safe edges\nSFX: synthesized 29.MUS bank, 50 samples, exact compatibility lengths\nLevels: 82 newly generated records across 5 modes in SOUNDINF.bin\n"%(PACK_VERSION,len(TEXTURE_NAMES)),encoding='utf-8')
     # Deterministic integrity list for the distributable replacement pack.

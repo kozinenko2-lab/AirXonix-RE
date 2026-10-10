@@ -174,7 +174,13 @@ std::vector<PickupEffect> Pickups::updateWithCollectors(int dtMs,const Field& fi
             // Pickup slot #5 enters dispatcher code 6: resolve its random effect
             // before respawning so the global MSVC rand() stream stays in the
             // same order as the original.
-            const PickupEffect effect=i==5?resolveRandomEffect(rng,lives):static_cast<PickupEffect>(int(i));
+            PickupEffect effect=i==5?resolveRandomEffect(rng,lives):static_cast<PickupEffect>(int(i));
+            if(i==5 && extendedRandom_){
+                // Preserve original random draw, then use a separate PRNG for extension choice.
+                extensionRng_^=extensionRng_<<13;extensionRng_^=extensionRng_>>17;extensionRng_^=extensionRng_<<5;
+                const unsigned pick=extensionRng_%12u;
+                if(pick<5u)effect=static_cast<PickupEffect>(9+pick);
+            }
             result.push_back(effect);
             // DIRECT EXE 0x415804..0x41586C: collection has an immediate spatial
             // cue in addition to the later auxiliary announcer voice. Effects

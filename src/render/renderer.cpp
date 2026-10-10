@@ -1,3 +1,4 @@
+#include "bonus_mesh_pack.hpp"
 #include <cstring>
 #include "renderer.hpp"
 #include "game/game.hpp"
@@ -160,6 +161,7 @@ bool appendCrawlerProjection(const LegacyMesh& mesh,float tx,float ty,float tz,f
 
 Renderer::~Renderer(){
     if(atlas3_)glDeleteTextures(1,&atlas3_);
+    if(bonusAtlas_)glDeleteTextures(1,&bonusAtlas_);
     if(atlas4_)glDeleteTextures(1,&atlas4_);
     if(atlas4Game_)glDeleteTextures(1,&atlas4Game_);
     if(atlas7_)glDeleteTextures(1,&atlas7_);
@@ -212,6 +214,9 @@ bool Renderer::initGameplayAtlas(const std::string& texturesPath){
     LegacyAtlasImage image;std::string error;
     if(!LegacyAtlasRuntime::buildGameplayAtlas3(texturesPath,image,&error,&originalResources_)){std::fprintf(stderr,"AirXonix atlas3: %s\n",error.c_str());return false;}
     atlas3_=uploadTexture(image,false);
+    { LegacyAtlasImage bonusTexture;std::string bonusError;
+      if(LegacyAtlasRuntime::loadTexture(texturesPath,"BONUSX",nullptr,bonusTexture,&bonusError))
+        bonusAtlas_=uploadTexture(bonusTexture,false); }
     // r175: keep the recovered black colour-key in the only gameplay atlas.
     // r77 already established shader discard for keyed legacy textures. The
     // r16x opaque duplicate forced black texels back to alpha=255 and caused
@@ -325,6 +330,7 @@ void Renderer::initLegacyModels(){
     for(int i=0;i<4;++i)airEnemyModels_[std::size_t(i)]=LegacyModelFactory::buildAirEnemySubtype(i,highQuality);
     airEnemyShadowModel_=LegacyModelFactory::buildAirEnemyShadow();
     for(int i=0;i<6;++i)pickupModels_[std::size_t(i)]=LegacyModelFactory::buildPickupType(i,highQuality);
+    (void)airxonix::bonus::loadModels(bonusModels_);
     for(int i=0;i<6;++i)auxiliaryModels_[std::size_t(i)]=LegacyModelFactory::buildAuxiliarySlot(i);
     trailNormalModel_=LegacyModelFactory::buildTrailSegment(false,highQuality);
     trailDamagedModel_=LegacyModelFactory::buildTrailSegment(true,highQuality);
@@ -638,7 +644,8 @@ void Renderer::spawnPickupSmash(const PickupSmashEvent& event){
 
 void Renderer::rebuildLegacyModelBatch(const Game& game){
     using namespace LegacyScreenPipeline;
-    modelVertices_.clear();modelIndices_.clear();xonixVertices_.clear();xonixIndices_.clear();directionalGlintVertices_.clear();directionalGlintIndices_.clear();shadowVertices_.clear();shadowIndices_.clear();reflectionVertices_.clear();reflectionIndices_.clear();particleVertices_.clear();particleIndices_.clear();auxiliaryVertices_.clear();auxiliaryIndices_.clear();deathOverlayVertices_.clear();deathOverlayIndices_.clear();crawlerPass1Vertices_.clear();crawlerPass1Indices_.clear();crawlerPass2Vertices_.clear();crawlerPass2Indices_.clear();interLevelCinematicVertices_.clear();interLevelCinematicIndices_.clear();levelIntroPlaqueVertices_.clear();levelIntroPlaqueIndices_.clear();levelIntroDigitsVertices_.clear();levelIntroDigitsIndices_.clear();
+    bonusVertices_.clear();bonusIndices_.clear();modelVertices_.clear();modelIndices_.clear();xonixVertices_.clear();xonixIndices_.clear();directionalGlintVertices_.clear();directionalGlintIndices_.clear();shadowVertices_.clear();shadowIndices_.clear();reflectionVertices_.clear();reflectionIndices_.clear();particleVertices_.clear();particleIndices_.clear();auxiliaryVertices_.clear();auxiliaryIndices_.clear();deathOverlayVertices_.clear();deathOverlayIndices_.clear();crawlerPass1Vertices_.clear();crawlerPass1Indices_.clear();crawlerPass2Vertices_.clear();crawlerPass2Indices_.clear();interLevelCinematicVertices_.clear();interLevelCinematicIndices_.clear();levelIntroPlaqueVertices_.clear();levelIntroPlaqueIndices_.clear();levelIntroDigitsVertices_.clear();levelIntroDigitsIndices_.clear();
+    OutputBatch bonusBatch;
     OutputBatch batch;batch.vertices.reserve(8192);batch.indices.reserve(16384);
     OutputBatch shadowBatch;shadowBatch.vertices.reserve(1024);shadowBatch.indices.reserve(2048);
     OutputBatch reflectionBatch;reflectionBatch.vertices.reserve(4096);reflectionBatch.indices.reserve(8192);
@@ -1083,6 +1090,19 @@ void Renderer::rebuildLegacyModelBatch(const Game& game){
         // literals; 0x40E710 itself applies the recovered *0.6 factor.
         appendReflection(pickupModels_[i],m,p.worldX,p.height+LegacyModels::PickupSubmitYOffset,p.worldZ,LegacyReflection::PickupRequestedIntensity[i]);
     }
+
+    const auto& extra=game.bonusExtensions();
+    const auto& extraState=extra.state();
+    if(extra.enabled()&&extraState.waitMs==0&&extraState.kind!=airxonix::bonus::Kind::None && bonusAtlas_){
+        const unsigned ix=static_cast<unsigned>(extraState.kind);
+        if(ix<bonusModels_.size()){
+            LegacyTransform::Matrix34 rot=LegacyTransform::identity();
+            LegacyTransform::rotateY(rot,game.pickups().presentationAngle2048());
+            appendLegacyMesh(bonusModels_[ix],rot,extraState.x,extraState.height,extraState.z,camera,projection,bonusBatch);
+        }
+    }
+    for(const auto& v:bonusBatch.vertices)bonusVertices_.push_back({v.clipX,v.clipY,v.clipZ,v.clipW,v.u,v.v,v.light,v.r,v.g,v.b,v.a});
+    bonusIndices_=std::move(bonusBatch.indices);
 
     reflectionVertices_.reserve(reflectionBatch.vertices.size());
     for(const auto& v:reflectionBatch.vertices)reflectionVertices_.push_back({v.clipX,v.clipY,v.clipZ,v.clipW,v.u,v.v,v.light,v.r,v.g,v.b,v.a});
@@ -1529,7 +1549,7 @@ void Renderer::rebuildHudBatch(const Game& game){
         state.modeLevelCounts[i]=static_cast<int>(game.database().modes()[i].levels.size());
         state.modeNames[i]=game.database().modes()[i].name;
     }
-    state.settingsSelected=game.settings().selected;state.settingsBrightness=game.settings().brightness;state.settingsScale=game.settings().scale;
+    state.settingsNewBonuses=game.settings().newBonuses;state.settingsSelected=game.settings().selected;state.settingsBrightness=game.settings().brightness;state.settingsScale=game.settings().scale;
     state.settingsSpeed=game.settings().speed;state.settingsSfx=game.settings().sfx;state.settingsMusic=game.settings().music;state.settingsSpeech=game.settings().speech;
     state.settingsSelectorOffset=game.settings().selectorOffset;state.settingsFadeScale=LegacySettingsTrace::modelLightScale(game.settings().fadeCounter);
     state.testInitialLives=game.settings().testInitialLives;state.testInitialTimeSeconds=game.settings().testInitialTimeSeconds;
@@ -2492,6 +2512,7 @@ void Renderer::drawGame(Game& game){
     drawBatch(shadowVertices_,shadowIndices_,env[LegacyFieldRenderState::ShadowTextureSlot]);
     drawBatch(xonixVertices_,xonixIndices_,atlas3_,true,kLegacyColorKeyDiscard);
     drawBatch(modelVertices_,modelIndices_,atlas3_,true,kLegacyColorKeyDiscard);
+    if(bonusAtlas_)drawBatch(bonusVertices_,bonusIndices_,bonusAtlas_,true,true);
     // r339 0x415887 selects logical texture 7 for BONU/TIME/LIFE/SLOW/ACCE/TOU2.
     drawBatch(auxiliaryVertices_,auxiliaryIndices_,atlas7_,true,kLegacyColorKeyDiscard);
     // r250+r251 DIRECT EXE 0x41A4E6..0x41A5EC: 0x405A60(1) enables
